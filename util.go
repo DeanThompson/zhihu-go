@@ -116,3 +116,33 @@ func newDocumentFromUrl(url string) (*goquery.Document, error) {
 
 	return doc, err
 }
+
+// ZhihuPage 是一个知乎页面，User, Question, Answer, Collection 的公共部分
+type ZhihuPage struct {
+	// Link 是该页面的链接
+	Link string
+
+	// doc 是 HTML document
+	doc *goquery.Document
+}
+
+func newZhihuPage(link string) *ZhihuPage {
+	return &ZhihuPage{
+		Link: link,
+	}
+}
+
+// Doc 用于获取当前问题页面的 HTML document，惰性求值
+func (page *ZhihuPage) Doc() *goquery.Document {
+	if page.doc != nil {
+		return page.doc
+	}
+
+	var err error
+	page.doc, err = newDocumentFromUrl(page.Link)
+	if err != nil {
+		return nil
+	}
+
+	return page.doc
+}

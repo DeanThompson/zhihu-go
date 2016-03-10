@@ -10,11 +10,7 @@ import (
 
 // Answer 是一个知乎的答案
 type Answer struct {
-	// Link 是该答案的链接
-	Link string
-
-	// doc 是一个 HTML document
-	doc *goquery.Document
+	*ZhihuPage
 
 	// question 是该答案对应的问题
 	question *Question
@@ -29,26 +25,11 @@ type Answer struct {
 // NewAnswer 用于创建一个 Answer 对象，其中 link 是必传的，question, author 可以为 nil
 func NewAnswer(link string, question *Question, author *User) *Answer {
 	return &Answer{
-		Link:     link,
-		question: question,
-		author:   author,
-		fields:   make(map[string]interface{}),
+		ZhihuPage: newZhihuPage(link),
+		question:  question,
+		author:    author,
+		fields:    make(map[string]interface{}),
 	}
-}
-
-// Doc 用于获取当前问题页面的 HTML document，惰性求值
-func (a *Answer) Doc() *goquery.Document {
-	if a.doc != nil {
-		return a.doc
-	}
-
-	var err error
-	a.doc, err = newDocumentFromUrl(a.Link)
-	if err != nil {
-		return nil
-	}
-
-	return a.doc
 }
 
 // GetID 返回该答案的数字 ID

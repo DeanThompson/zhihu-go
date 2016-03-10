@@ -2,21 +2,17 @@ package zhihu
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/PuerkitoBio/goquery"
-	"strconv"
 )
 
 // Question 表示一个知乎问题，可以用于获取其标题、详情、答案等信息
 type Question struct {
-	// Link 是该问题链接
-	Link string
+	*ZhihuPage
 
 	// title 是该问题的标题
 	title string
-
-	// doc 是 HTML document
-	doc *goquery.Document
 
 	// fields 是字段缓存，避免重复解析页面
 	fields map[string]interface{}
@@ -25,29 +21,14 @@ type Question struct {
 // NewQuestion 通过给定的 URL 创建一个 Question 对象
 func NewQuestion(link string, title string) *Question {
 	if !validQuestionURL(link) {
-		panic("问题链接不正确: " + link) // TODO or return error?
+		panic("问题链接不正确: " + link)
 	}
 
 	return &Question{
-		Link:   link,
-		title:  title,
-		fields: make(map[string]interface{}),
+		ZhihuPage: newZhihuPage(link),
+		title:     title,
+		fields:    make(map[string]interface{}),
 	}
-}
-
-// Doc 用于获取当前问题页面的 HTML document，惰性求值
-func (q *Question) Doc() *goquery.Document {
-	if q.doc != nil {
-		return q.doc
-	}
-
-	var err error
-	q.doc, err = newDocumentFromUrl(q.Link)
-	if err != nil {
-		return nil
-	}
-
-	return q.doc
 }
 
 // GetTitle 获取问题标题

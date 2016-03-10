@@ -2,17 +2,11 @@ package zhihu
 
 import (
 	"strconv"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 // Collection 是一个知乎的收藏夹页面
 type Collection struct {
-	// Link 是该页面的链接
-	Link string
-
-	// doc 是一个 HTML document
-	doc *goquery.Document
+	*ZhihuPage
 
 	// creator 是该收藏夹的创建者
 	creator *User
@@ -30,25 +24,10 @@ func NewCollection(link string, name string) *Collection {
 	}
 
 	return &Collection{
-		Link:   link,
-		name:   name,
-		fields: make(map[string]interface{}),
+		ZhihuPage: newZhihuPage(link),
+		name:      name,
+		fields:    make(map[string]interface{}),
 	}
-}
-
-// Doc 用于获取当前问题页面的 HTML document，惰性求值
-func (c *Collection) Doc() *goquery.Document {
-	if c.doc != nil {
-		return c.doc
-	}
-
-	var err error
-	c.doc, err = newDocumentFromUrl(c.Link)
-	if err != nil {
-		return nil
-	}
-
-	return c.doc
 }
 
 // GetName 返回收藏夹的名字

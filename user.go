@@ -2,16 +2,17 @@ package zhihu
 
 import "fmt"
 
+// User 表示一个知乎用户
 type User struct {
-	Link string
+	*ZhihuPage
 
 	userId string // 用户名
 }
 
 func NewUser(link string, userId string) *User {
 	return &User{
-		Link:   link,
-		userId: userId,
+		ZhihuPage: newZhihuPage(link),
+		userId:    userId,
 	}
 }
 
