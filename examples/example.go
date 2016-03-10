@@ -21,8 +21,7 @@ func main() {
 	logger.Success("========== split ==========")
 
 	// 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？豆子 的答案
-	answerUrl := "https://www.zhihu.com/question/23759686/answer/41997389"
-	answer := zhihu.NewAnswer(answerUrl, nil, nil)
+	answer := zhihu.NewAnswer("https://www.zhihu.com/question/23759686/answer/41997389", nil, nil)
 	showAnswer(answer)
 
 	logger.Success("========== split ==========")
@@ -30,6 +29,11 @@ func main() {
 	// 程序员为了期权加入创业公司，值得吗？ 匿名用户的答案
 	answer2 := zhihu.NewAnswer("https://www.zhihu.com/question/28023819/answer/49723406", nil, nil)
 	showAnswer(answer2)
+
+	logger.Success("========== split ==========")
+
+	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19653044", "")
+	showCollection(collection)
 }
 
 func showQuestion(question *zhihu.Question) {
@@ -66,4 +70,12 @@ func showAnswer(answer *zhihu.Answer) {
 	for i, voter := range answer.GetVoters() {
 		logger.Info("	voter-%d: %s", i, voter.String())
 	}
+}
+
+func showCollection(collection *zhihu.Collection) {
+	logger.Info("Collection fields:")
+	logger.Info("	url: %s", collection.Link)
+	logger.Info("	name: %s", collection.GetName())
+	logger.Info("	creator: %s", collection.GetCreator().String())
+	logger.Info("	followers num: %d", collection.GetFollowersNum())
 }

@@ -9,15 +9,16 @@ import (
 
 // Question 表示一个知乎问题，可以用于获取其标题、详情、答案等信息
 type Question struct {
-	// 问题链接
+	// Link 是该问题链接
 	Link string
 
+	// title 是该问题的标题
 	title string
 
-	// HTML document
+	// doc 是 HTML document
 	doc *goquery.Document
 
-	// 字段缓存，避免重复解析页面
+	// fields 是字段缓存，避免重复解析页面
 	fields map[string]interface{}
 }
 

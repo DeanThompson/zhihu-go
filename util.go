@@ -19,12 +19,17 @@ const (
 )
 
 var (
-	questionURLPattern = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
-	logger             = Logger{Enabled: true}
+	questionURLPattern   = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
+	collectionURLPattern = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
+	logger               = Logger{Enabled: true}
 )
 
 func validQuestionURL(value string) bool {
-	return questionURLPattern.Match([]byte(value))
+	return questionURLPattern.MatchString(value)
+}
+
+func validCollectionURL(value string) bool {
+	return collectionURLPattern.MatchString(value)
 }
 
 func newHTTPHeaders(isXhr bool) http.Header {
