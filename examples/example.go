@@ -13,6 +13,12 @@ var (
 func main() {
 	zhihu.Init("./config.json")
 
+	// 黄继新
+	user := zhihu.NewUser("https://www.zhihu.com/people/jixin", "")
+	showUser(user)
+
+	logger.Success("========== split ==========")
+
 	// 如何评价第一局比赛 AlphaGo 战胜李世石？
 	questionUrl := "https://www.zhihu.com/question/41171543"
 	question := zhihu.NewQuestion(questionUrl, "")
@@ -20,7 +26,7 @@ func main() {
 
 	logger.Success("========== split ==========")
 
-	// 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？豆子 的答案
+	//	 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？豆子 的答案
 	answer := zhihu.NewAnswer("https://www.zhihu.com/question/23759686/answer/41997389", nil, nil)
 	showAnswer(answer)
 
@@ -78,4 +84,43 @@ func showCollection(collection *zhihu.Collection) {
 	logger.Info("	name: %s", collection.GetName())
 	logger.Info("	creator: %s", collection.GetCreator().String())
 	logger.Info("	followers num: %d", collection.GetFollowersNum())
+}
+
+func showUser(user *zhihu.User) {
+	logger.Info("User fields:")
+	logger.Info("	is anonymous: %v", user.IsAnonymous())
+	logger.Info("	userId: %s", user.GetUserID())
+	logger.Info("	dataId: %s", user.GetDataID())
+	logger.Info("	gender: %s", user.GetGender())
+	logger.Info("	followers num: %d", user.GetFollowersNum())
+	logger.Info("	followees num: %d", user.GetFolloweesNum())
+	logger.Info("	agree num: %d", user.GetAgreeNum())
+	logger.Info("	thanks num: %d", user.GetThanksNum())
+	logger.Info("	asks num: %d", user.GetAsksNum())
+	logger.Info("	answers num: %d", user.GetAnswersNum())
+	logger.Info("	collections num: %d", user.GetCollectionsNum())
+
+	for i, follower := range user.GetFollowers() {
+		logger.Info("	follower-%d: %s", i, follower.String())
+	}
+
+	for i, followee := range user.GetFollowers() {
+		logger.Info("	followee-%d: %s", i, followee.String())
+	}
+
+	for i, ask := range user.GetAsks() {
+		logger.Info("	ask-%d: %s", i, ask.String())
+	}
+
+	for i, answer := range user.GetAnswers() {
+		logger.Info("	answer-%d: %s", i, answer.String())
+	}
+
+	for i, collection := range user.GetCollections() {
+		logger.Info("	collection-%d: %s", i, collection.String())
+	}
+
+	for i, like := range user.GetLikes() {
+		logger.Info("	like-%d: %s", i, like.String())
+	}
 }

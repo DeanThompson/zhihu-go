@@ -1,6 +1,7 @@
 package zhihu
 
 import (
+	"fmt"
 	"strconv"
 )
 
@@ -88,4 +89,8 @@ func (c *Collection) GetAllAnswers() []*Answer {
 // TODO GetTopXAnswers 返回收藏夹里前 x 个回答
 func (c *Collection) GetTopXAnswers(x int) []*Answer {
 	return nil
+}
+
+func (c *Collection) String() string {
+	return fmt.Sprintf("<Collection: %s - %s>", c.GetName(), c.Link)
 }
