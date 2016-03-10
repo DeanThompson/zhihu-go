@@ -60,4 +60,10 @@ func showAnswer(answer *zhihu.Answer) {
 
 	logger.Info("	author: %s", answer.GetAuthor().String())
 	logger.Info("	upvote num: %d", answer.GetUpvote())
+	logger.Info("	visit times: %d", answer.GetVisitTimes())
+	logger.Info("	data ID: %d", answer.GetID())
+
+	for i, voter := range answer.GetVoters() {
+		logger.Info("	voter-%d: %s", i, voter.String())
+	}
 }

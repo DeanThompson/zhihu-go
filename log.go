@@ -7,6 +7,7 @@ import (
 )
 
 // Logger 是一个简单的输出工具，可以输出不同颜色的信息
+// TODO simple level
 type Logger struct {
 	Enabled bool
 }
@@ -18,7 +19,7 @@ func (logger *Logger) log(a ...interface{}) {
 }
 
 func (logger *Logger) Error(msg string, a ...interface{}) {
-	logger.log(color.RedString("ERROR:"+msg, a...))
+	logger.log(color.RedString("ERROR: "+msg, a...))
 }
 
 func (logger *Logger) Warn(msg string, a ...interface{}) {

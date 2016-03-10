@@ -40,20 +40,12 @@ func (q *Question) Doc() *goquery.Document {
 		return q.doc
 	}
 
-	resp, err := gSession.Get(q.Link)
+	var err error
+	q.doc, err = newDocumentFromUrl(q.Link)
 	if err != nil {
-		logger.Error("查询问题页面失败：%s", err.Error())
 		return nil
 	}
 
-	logger.Debug("NewDocumentFromResponse...")
-	doc, err := goquery.NewDocumentFromResponse(resp)
-	if err != nil {
-		logger.Error("解析页面失败：%s", err.Error())
-		return nil
-	}
-
-	q.doc = doc
 	return q.doc
 }
 
@@ -160,5 +152,5 @@ func (q *Question) GetVisitTimes() int {
 }
 
 func (q *Question) String() string {
-	return fmt.Sprintf("Question: %s - %s", q.GetTitle(), q.Link)
+	return fmt.Sprintf("<Question: %s - %s>", q.GetTitle(), q.Link)
 }

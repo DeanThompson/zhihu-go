@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/fatih/color"
 )
 
@@ -19,7 +20,6 @@ const (
 
 var (
 	questionURLPattern = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
-	userURLPattern     = regexp.MustCompile("^(http|https)://www.zhihu.com/pepole/")
 	logger             = Logger{Enabled: true}
 )
 
@@ -95,4 +95,19 @@ func readCaptchaInput() string {
 func makeZhihuLink(path string) string {
 	path = strings.TrimLeft(path, "/")
 	return "http://www.zhihu.com/" + path
+}
+
+func newDocumentFromUrl(url string) (*goquery.Document, error) {
+	resp, err := gSession.Get(url)
+	if err != nil {
+		logger.Error("请求 %s 失败：%s", url, err.Error())
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
+		logger.Error("解析页面失败：%s", err.Error())
+	}
+
+	return doc, err
 }

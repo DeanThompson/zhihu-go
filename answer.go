@@ -8,19 +8,25 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// Answer 是一个知乎的答案
 type Answer struct {
+	// Link 是该答案的链接
 	Link string
 
-	// HTML document
+	// doc 是一个 HTML document
 	doc *goquery.Document
 
+	// question 是该答案对应的问题
 	question *Question
 
+	// author 是该答案的作者
 	author *User
 
+	// fields 是一些其他信息的缓存
 	fields map[string]interface{}
 }
 
+// NewAnswer 用于创建一个 Answer 对象，其中 link 是必传的，question, author 可以为 nil
 func NewAnswer(link string, question *Question, author *User) *Answer {
 	return &Answer{
 		Link:     link,
@@ -36,22 +42,35 @@ func (a *Answer) Doc() *goquery.Document {
 		return a.doc
 	}
 
-	resp, err := gSession.Get(a.Link)
+	var err error
+	a.doc, err = newDocumentFromUrl(a.Link)
 	if err != nil {
-		logger.Error("查询答案页面失败：%s", err.Error())
 		return nil
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
-	if err != nil {
-		logger.Error("解析页面失败：%s", err.Error())
-		return nil
-	}
-
-	a.doc = doc
 	return a.doc
 }
 
+// GetID 返回该答案的数字 ID
+func (a *Answer) GetID() int {
+	if got, ok := a.fields["data-aid"]; ok {
+		return got.(int)
+	}
+
+	var (
+		doc = a.Doc()
+		aid = 0
+	)
+	text, exists := doc.Find("div.zm-item-answer.zm-item-expanded").Attr("data-aid")
+	if exists {
+		aid, _ = strconv.Atoi(text)
+	}
+	a.fields["data-aid"] = aid
+	return aid
+}
+
+// GetQuestion 返回该回答所属的问题，如果 NewAnswer 时 question 不为 nil，则直接返回该值；
+// 否则会抓取页面并分析得到问题的链接和标题，再新建一个 Question 对象
 func (a *Answer) GetQuestion() *Question {
 	if a.question != nil {
 		return a.question
@@ -115,21 +134,77 @@ func (a *Answer) ToMarkdown() error {
 	return nil
 }
 
-// TODO GetContent 返回回答的内容
+// GetContent 返回回答的内容
 func (a *Answer) GetContent() string {
-	return ""
+	if got, ok := a.fields["content"]; ok {
+		return got.(string)
+	}
+
+	doc := a.Doc()
+
+	// 从原文档 clone 一份
+	newDoc := goquery.CloneDocument(doc)
+
+	// 把 body 清空
+	newDoc.Find("body").Children().Each(func(_ int, sel *goquery.Selection) {
+		sel.Remove()
+	})
+
+	// 获取答案部分的 HTML，并进行清洗和修正
+	answerSel := doc.Find("div.zm-editable-content.clearfix")
+	answerSel.Find("noscript").Each(func(_ int, sel *goquery.Selection) {
+		sel.Remove() // 把无用的 noscript 部分去掉
+	})
+
+	answerSel.Find("img").Each(func(_ int, sel *goquery.Selection) {
+		src, _ := sel.Attr("data-actualsrc")
+		sel.SetAttr("src", src) // 把图片的 src 改为 data-actualsrc 的值
+	})
+
+	// body 只保留答案内容部分
+	newDoc.Find("body").AppendSelection(answerSel)
+	content, _ := newDoc.Html()
+	a.fields["content"] = content
+	return content
 }
 
-// TODO GetVoters 返回点赞的用户
+// GetVoters 返回点赞的用户
 func (a *Answer) GetVoters() []*User {
-	return nil
+	querystring := fmt.Sprintf(`params={"answer_id":"%d"}`, a.GetID())
+	url := makeZhihuLink("/node/AnswerFullVoteInfoV2" + "?" + querystring)
+	doc, err := newDocumentFromUrl(url)
+	if err != nil {
+		return nil
+	}
+
+	sel := doc.Find(".voters span")
+	voters := make([]*User, 0, sel.Length())
+	sel.Each(func(index int, span *goquery.Selection) {
+		userId := strings.Trim(strip(span.Text()), "、")
+		var userLink string
+		if !(userId == "匿名用户" || userId == "知乎用户") {
+			path, _ := span.Find("a").Attr("href")
+			userLink = makeZhihuLink(path)
+		}
+		voters = append(voters, NewUser(userLink, userId))
+	})
+
+	return voters
 }
 
-// TODO GetVisitTimes 返回所属问题被浏览次数
+// GetVisitTimes 返回所属问题被浏览次数
 func (a *Answer) GetVisitTimes() int {
-	return 0
+	if got, ok := a.fields["visit-times"]; ok {
+		return got.(int)
+	}
+
+	doc := a.Doc()
+	text := strip(doc.Find("div.zm-side-section.zh-answer-status p strong").Text())
+	visitTimes, _ := strconv.Atoi(text)
+	a.fields["visit-times"] = visitTimes
+	return visitTimes
 }
 
 func (a *Answer) String() string {
-	return fmt.Sprintf("Answer: %s - %s", a.GetAuthor().String(), a.Link)
+	return fmt.Sprintf("<Answer: %s - %s>", a.GetAuthor().String(), a.Link)
 }
