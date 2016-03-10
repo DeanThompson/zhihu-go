@@ -1,6 +1,9 @@
 package zhihu
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // User 表示一个知乎用户
 type User struct {
@@ -85,12 +88,50 @@ func (user *User) GetGender() string {
 
 // TODO GetFollowersNum 返回用户的粉丝数量
 func (user *User) GetFollowersNum() int {
-	return 0
+	if got, ok := user.fields["followers-num"]; ok {
+		return got.(int)
+	}
+
+	doc := user.Doc()
+
+	// <div class="zm-profile-side-following zg-clear">
+	//   <a class="item" href="/people/leonyoung/followees">
+	//     <span class="zg-gray-normal">关注了</span><br>
+	//     <strong>152</strong><label> 人</label>
+	//   </a>
+	//   <a class="item" href="/people/leonyoung/followers">
+	//     <span class="zg-gray-normal">关注者</span><br>
+	//     <strong>87</strong><label> 人</label>
+	//   </a>
+	// </div>
+	value := doc.Find("div.zm-profile-side-following a strong").Eq(1).Text()
+	followersNum, _ := strconv.Atoi(value)
+	user.fields["followers-num"] = followersNum
+	return followersNum
 }
 
 // TODO GetFolloweesNum 返回用户关注的数量
 func (user *User) GetFolloweesNum() int {
-	return 0
+	if got, ok := user.fields["followees-num"]; ok {
+		return got.(int)
+	}
+
+	doc := user.Doc()
+
+	// <div class="zm-profile-side-following zg-clear">
+	//   <a class="item" href="/people/leonyoung/followees">
+	//     <span class="zg-gray-normal">关注了</span><br>
+	//     <strong>152</strong><label> 人</label>
+	//   </a>
+	//   <a class="item" href="/people/leonyoung/followers">
+	//     <span class="zg-gray-normal">关注者</span><br>
+	//     <strong>87</strong><label> 人</label>
+	//   </a>
+	// </div>
+	value := doc.Find("div.zm-profile-side-following a strong").Eq(0).Text()
+	followeesNum, _ := strconv.Atoi(value)
+	user.fields["followees-num"] = followeesNum
+	return followeesNum
 }
 
 // TODO GetAgreeNum 返回用户的点赞数
