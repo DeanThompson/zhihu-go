@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -48,6 +49,13 @@ func newHTTPHeaders(isXhr bool) http.Header {
 
 func strip(s string) string {
 	return strings.Trim(s, "\n")
+}
+
+func minInt(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
 }
 
 func getCwd() string {
@@ -102,6 +110,21 @@ func makeZhihuLink(path string) string {
 	return "http://www.zhihu.com/" + path
 }
 
+func refineUpvoteNum(text string) int {
+	rv := 0
+	if strings.HasSuffix(text, "K") {
+		num, _ := strconv.Atoi(text[0 : len(text)-1])
+		rv = num * 1000
+	} else if strings.HasPrefix(text, "W") {
+		num, _ := strconv.Atoi(text[0 : len(text)-1])
+		rv = num * 10000
+	} else {
+		rv, _ = strconv.Atoi(text)
+	}
+	return rv
+}
+
+// newDocumentFromUrl 会请求给定的 url，并返回一个 goquery.Document 对象用于解析
 func newDocumentFromUrl(url string) (*goquery.Document, error) {
 	resp, err := gSession.Get(url)
 	if err != nil {
@@ -126,6 +149,7 @@ type ZhihuPage struct {
 	doc *goquery.Document
 }
 
+// newZhihuPage 是 private 的构造器
 func newZhihuPage(link string) *ZhihuPage {
 	return &ZhihuPage{
 		Link: link,
@@ -138,11 +162,16 @@ func (page *ZhihuPage) Doc() *goquery.Document {
 		return page.doc
 	}
 
-	var err error
-	page.doc, err = newDocumentFromUrl(page.Link)
+	err := page.Refresh()
 	if err != nil {
 		return nil
 	}
 
 	return page.doc
+}
+
+// Refresh 会重新载入当前页面，获取最新的数据
+func (page *ZhihuPage) Refresh() (err error) {
+	page.doc, err = newDocumentFromUrl(page.Link)
+	return err
 }

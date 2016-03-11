@@ -91,16 +91,7 @@ func (a *Answer) GetUpvote() int {
 
 	doc := a.Doc()
 	text := strip(doc.Find("span.count").First().Text())
-	upvote := 0
-	if strings.HasSuffix(text, "K") {
-		num, _ := strconv.Atoi(text[0 : len(text)-1])
-		upvote = num * 1000
-	} else if strings.HasPrefix(text, "W") {
-		num, _ := strconv.Atoi(text[0 : len(text)-1])
-		upvote = num * 10000
-	} else {
-		upvote, _ = strconv.Atoi(text)
-	}
+	upvote := refineUpvoteNum(text)
 	a.fields["upvote"] = upvote
 	return upvote
 }
@@ -188,4 +179,12 @@ func (a *Answer) GetVisitTimes() int {
 
 func (a *Answer) String() string {
 	return fmt.Sprintf("<Answer: %s - %s>", a.GetAuthor().String(), a.Link)
+}
+
+func (a *Answer) setContent(value string) {
+	a.fields["content"] = value
+}
+
+func (a *Answer) setUpvote(value int) {
+	a.fields["upvote"] = value
 }

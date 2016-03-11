@@ -64,7 +64,6 @@ func showAnswer(answer *zhihu.Answer) {
 	logger.Info("	url: %s", answer.Link)
 
 	question := answer.GetQuestion()
-	//	showQuestion(answer.GetQuestion())
 	logger.Info("	question url: %s", question.Link)
 	logger.Info("	question title: %s", question.GetTitle())
 
