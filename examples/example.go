@@ -98,7 +98,9 @@ func showUser(user *zhihu.User) {
 	logger.Info("	thanks num: %d", user.GetThanksNum())
 	logger.Info("	asks num: %d", user.GetAsksNum())
 	logger.Info("	answers num: %d", user.GetAnswersNum())
+	logger.Info("	posts num: %d", user.GetPostsNum())
 	logger.Info("	collections num: %d", user.GetCollectionsNum())
+	logger.Info("	logs num: %d", user.GetLogsNum())
 
 	for i, follower := range user.GetFollowers() {
 		logger.Info("	follower-%d: %s", i, follower.String())
