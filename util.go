@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -110,20 +109,6 @@ func makeZhihuLink(path string) string {
 	return "http://www.zhihu.com/" + path
 }
 
-func refineUpvoteNum(text string) int {
-	rv := 0
-	if strings.HasSuffix(text, "K") {
-		num, _ := strconv.Atoi(text[0 : len(text)-1])
-		rv = num * 1000
-	} else if strings.HasPrefix(text, "W") {
-		num, _ := strconv.Atoi(text[0 : len(text)-1])
-		rv = num * 10000
-	} else {
-		rv, _ = strconv.Atoi(text)
-	}
-	return rv
-}
-
 // newDocumentFromUrl 会请求给定的 url，并返回一个 goquery.Document 对象用于解析
 func newDocumentFromUrl(url string) (*goquery.Document, error) {
 	resp, err := gSession.Get(url)
@@ -174,4 +159,11 @@ func (page *ZhihuPage) Doc() *goquery.Document {
 func (page *ZhihuPage) Refresh() (err error) {
 	page.doc, err = newDocumentFromUrl(page.Link)
 	return err
+}
+
+// GetXsrf 从当前页面内容抓取 xsrf 的值
+func (page *ZhihuPage) GetXsrf() string {
+	doc := page.Doc()
+	value, _ := doc.Find(`input[name="_xsrf"]`).Attr("value")
+	return value
 }

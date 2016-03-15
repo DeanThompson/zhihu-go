@@ -113,29 +113,8 @@ func (a *Answer) GetContent() string {
 	}
 
 	doc := a.Doc()
-
-	// 从原文档 clone 一份
-	newDoc := goquery.CloneDocument(doc)
-
-	// 把 body 清空
-	newDoc.Find("body").Children().Each(func(_ int, sel *goquery.Selection) {
-		sel.Remove()
-	})
-
-	// 获取答案部分的 HTML，并进行清洗和修正
-	answerSel := doc.Find("div.zm-editable-content.clearfix")
-	answerSel.Find("noscript").Each(func(_ int, sel *goquery.Selection) {
-		sel.Remove() // 把无用的 noscript 部分去掉
-	})
-
-	answerSel.Find("img").Each(func(_ int, sel *goquery.Selection) {
-		src, _ := sel.Attr("data-actualsrc")
-		sel.SetAttr("src", src) // 把图片的 src 改为 data-actualsrc 的值
-	})
-
-	// body 只保留答案内容部分
-	newDoc.Find("body").AppendSelection(answerSel)
-	content, _ := newDoc.Html()
+	destDoc := goquery.CloneDocument(doc) // 从原文档 clone 一份，用于输出
+	content := restructAnswerContent(destDoc, doc.Selection)
 	a.fields["content"] = content
 	return content
 }
@@ -187,4 +166,41 @@ func (a *Answer) setContent(value string) {
 
 func (a *Answer) setUpvote(value int) {
 	a.fields["upvote"] = value
+}
+
+func refineUpvoteNum(text string) int {
+	rv := 0
+	if strings.HasSuffix(text, "K") {
+		num, _ := strconv.Atoi(text[0 : len(text)-1])
+		rv = num * 1000
+	} else if strings.HasPrefix(text, "W") {
+		num, _ := strconv.Atoi(text[0 : len(text)-1])
+		rv = num * 10000
+	} else {
+		rv, _ = strconv.Atoi(text)
+	}
+	return rv
+}
+
+func restructAnswerContent(destDoc *goquery.Document, srcDoc *goquery.Selection) string {
+	// 用于输出的 HTML，只保留页面的 header 部分，把 body 清空
+	destDoc.Find("body").Children().Each(func(_ int, sel *goquery.Selection) {
+		sel.Remove()
+	})
+
+	// 获取答案部分的 HTML，并进行清洗和修正
+	answerSel := srcDoc.Find("div.zm-editable-content.clearfix")
+	answerSel.Find("noscript").Each(func(_ int, sel *goquery.Selection) {
+		sel.Remove() // 把无用的 noscript 部分去掉
+	})
+
+	answerSel.Find("img").Each(func(_ int, sel *goquery.Selection) {
+		src, _ := sel.Attr("data-actualsrc")
+		sel.SetAttr("src", src) // 把图片的 src 改为 data-actualsrc 的值
+	})
+
+	// body 只保留答案内容部分
+	destDoc.Find("body").AppendSelection(answerSel)
+	content, _ := destDoc.Html()
+	return content
 }

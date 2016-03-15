@@ -189,6 +189,21 @@ func (s *Session) Post(url string, bodyType string, body io.Reader) (*http.Respo
 	return s.client.Do(req)
 }
 
+// Ajax 发起一个 Ajax 请求，自动处理 cookies
+func (s *Session) Ajax(url string, body io.Reader, referer string) (*http.Response, error) {
+	logger.Info("AJAX %s, referrer %s", url, referer)
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := newHTTPHeaders(true)
+	headers.Set("Content-Type", "application/x-www-form-urlencoded")
+	headers.Set("Referer", referer)
+	req.Header = headers
+	return s.client.Do(req)
+}
+
 // authenticated 检查是否已经登录（cookies 没有失效）
 func (s *Session) authenticated() bool {
 	originUrl := "https://www.zhihu.com/settings/profile"
@@ -276,4 +291,9 @@ func Init(cfgFile string) {
 
 	// 登录
 	gSession.Login()
+}
+
+// SetSession 用于替换默认的 session
+func SetSession(s *Session) {
+	gSession = s
 }

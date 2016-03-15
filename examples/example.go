@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/DeanThompson/zhihu-go"
@@ -19,14 +21,14 @@ func main() {
 
 	logger.Success("========== split ==========")
 
-	// 如何评价第一局比赛 AlphaGo 战胜李世石？
-	questionUrl := "https://www.zhihu.com/question/41171543"
+	// 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？
+	questionUrl := "https://www.zhihu.com/question/23759686"
 	question := zhihu.NewQuestion(questionUrl, "")
 	showQuestion(question)
 
 	logger.Success("========== split ==========")
 
-	//	 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？豆子 的答案
+	// 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？豆子 的答案
 	answer := zhihu.NewAnswer("https://www.zhihu.com/question/23759686/answer/41997389", nil, nil)
 	showAnswer(answer)
 
@@ -51,15 +53,28 @@ func showQuestion(question *zhihu.Question) {
 	logger.Info("	followers num: %d", question.GetFollowersNum())
 	logger.Info("	topics: %s", strings.Join(question.GetTopics(), ", "))
 
-	//	for i, answer := range question.GetAllAnswers() {
-	//		logger.Info("	answer-%d: %s", i, answer.String())
-	//	}
-	//
-	//	logger.Info("	top-1 answer: %s", question.GetTopAnswer().String())
+	allAnswers := question.GetAllAnswers()
+	for i, answer := range allAnswers {
+		logger.Info("	answer-%d: %s", i+1, answer.String())
+		// filename := fmt.Sprintf("/tmp/%s-%s的回答.html", question.GetTitle(), answer.GetAuthor().GetUserID())
+		// dumpAnswerHTML(filename, answer)
+		if i >= 10 {
+			logger.Info("	%d answers not shown.", len(allAnswers)-i-1)
+			break
+		}
+	}
+
+	topXAnswers := question.GetTopXAnswers(25)
+	for i, answer := range topXAnswers {
+		logger.Info("	top-%d answer: %s", i+1, answer.String())
+	}
+
+	logger.Info("	top-1 answer: %s", question.GetTopAnswer().String())
 	logger.Info("	visit times: %d", question.GetVisitTimes())
 }
 
 func showAnswer(answer *zhihu.Answer) {
+	return
 	logger.Info("Answer fields:")
 	logger.Info("	url: %s", answer.Link)
 
@@ -72,10 +87,15 @@ func showAnswer(answer *zhihu.Answer) {
 	logger.Info("	visit times: %d", answer.GetVisitTimes())
 	logger.Info("	data ID: %d", answer.GetID())
 
+	// dump content
+	filename := fmt.Sprintf("/tmp/answer_%d.html", answer.GetID())
+	dumpAnswerHTML(filename, answer)
+
 	for i, voter := range answer.GetVoters() {
-		logger.Info("	voter-%d: %s", i, voter.String())
-		if i > 10 {
-			logger.Info("	other voters ...")
+		logger.Info("	voter-%d: %s", i+1, voter.String())
+		if i >= 10 {
+			remain := len(answer.GetVoters()) - i - 1
+			logger.Info("	%d votes not shown.", remain)
 			break
 		}
 	}
@@ -131,4 +151,22 @@ func showUser(user *zhihu.User) {
 	for i, like := range user.GetLikes() {
 		logger.Info("	like-%d: %s", i, like.String())
 	}
+}
+
+func dumpAnswerHTML(filename string, answer *zhihu.Answer) error {
+	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		var _err error
+		if os.IsNotExist(err) {
+			fd, _err = os.Create(filename)
+			if _err != nil {
+				return _err
+			}
+		}
+	}
+	_, err = fd.WriteString(answer.GetContent())
+	if err == nil {
+		logger.Info("	content dumped to %s", filename)
+	}
+	return err
 }

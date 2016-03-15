@@ -1,10 +1,18 @@
 package zhihu
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+)
+
+const (
+	pageSize = 20
 )
 
 // Question 表示一个知乎问题，可以用于获取其标题、详情、答案等信息
@@ -98,23 +106,38 @@ func (q *Question) GetTopics() []string {
 	return topics
 }
 
-// TODO GetAllAnswers 获取问题的所有答案
+// GetAllAnswers 获取问题的所有答案
 func (q *Question) GetAllAnswers() []*Answer {
+	return q.GetTopXAnswers(q.GetAnswersNum())
+}
+
+// GetTopXAnswer 获取问题 Top X 的答案
+func (q *Question) GetTopXAnswers(x int) []*Answer {
+	if x > q.GetAnswersNum() {
+		x = q.GetAnswersNum()
+	}
+
 	// 1. 首页的回答
+	answers := q.getAnswersOnIndex()
+
+	if x < len(answers) {
+		return answers[:x]
+	}
+
 	// 2. "更多"，调用 Ajax 接口
-	return nil
+	moreCount := x - pageSize
+	if moreCount > 0 {
+		answers = append(answers, q.getMoreAnswers(moreCount)...)
+	}
+
+	return answers
 }
 
-// TODO GetTopXAnswer 获取问题 Top X 的答案
-func (q *Question) GetTopXAnswer(x int) []*Answer {
-	return nil
-}
-
-// TODO GetTopAnswer 获取问题排名第一的答案
+// GetTopAnswer 获取问题排名第一的答案
 func (q *Question) GetTopAnswer() *Answer {
-	answers := q.GetTopXAnswer(1)
-	if len(answers) >= 1 {
-		return answers[0]
+	topAnswers := q.GetTopXAnswers(1)
+	if len(topAnswers) >= 1 {
+		return topAnswers[0]
 	}
 	return nil
 }
@@ -141,26 +164,85 @@ func (q *Question) String() string {
 
 // getAnswersOnIndex 解析问题页面，返回第一页的回答
 func (q *Question) getAnswersOnIndex() []*Answer {
-	var (
-		answerPerPage = 20
-		totalNum      = q.GetAnswersNum()
-	)
-	answers := make([]*Answer, minInt(answerPerPage, totalNum))
+	totalNum := q.GetAnswersNum()
+	answers := make([]*Answer, 0, minInt(pageSize, totalNum))
 
 	doc := q.Doc()
 
 	doc.Find("div.zm-item-answer").Each(func(index int, sel *goquery.Selection) {
 		answers = append(answers, q.processSingleAnswer(sel))
 	})
-	return nil
+	return answers
 }
 
-// TODO getMoreAnswers 处理 “更多” 回答，调用 Ajax 接口
-func (q *Question) getMoreAnswers() []*Answer {
-	return nil
+type answerListResult struct {
+	R   int      `json:"r"`   // 状态码，正确的情况为 0
+	Msg []string `json:"msg"` // 回答内容，每个元素都是一段 HTML 片段
 }
 
-// TODO processSingleAnswer 处理一个回答的 HTML 片段，
+// getAnswersByAjax 处理 “更多” 回答，调用 Ajax 接口
+func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
+	offset := page * pageSize
+	if offset > q.GetAnswersNum() {
+		return nil, errors.New("No more answers.")
+	}
+
+	// 如果 URL 是 https://www.zhihu.com/question/23759686，则 urlToken 是 23759686
+	urlToken, _ := strconv.Atoi(q.Link[len(q.Link)-8 : len(q.Link)])
+
+	form := url.Values{}
+	form.Set("_xsrf", q.GetXsrf())
+	form.Set("method", "next")
+	form.Set("params", fmt.Sprintf(`{"url_token":%d,"pagesize":%d,"offset":%d}`, urlToken, pageSize, offset))
+
+	link := "http://www.zhihu.com/node/QuestionAnswerListV2"
+	body := strings.NewReader(form.Encode())
+	resp, err := gSession.Ajax(link, body, q.Link)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	result := answerListResult{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO 判断 r 的值
+	answers := make([]*Answer, 0, len(result.Msg))
+	for _, answerHtml := range result.Msg {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(answerHtml))
+		if err != nil {
+			return nil, err
+		}
+		thisAnswer := q.processSingleAnswer(doc.Selection)
+		answers = append(answers, thisAnswer)
+	}
+
+	return answers, nil
+}
+
+// getMoreAnswers 执行多次“更多”
+func (q *Question) getMoreAnswers(limit int) []*Answer {
+	answers := make([]*Answer, 0, limit)
+	index := 0
+	totalPage := (limit + pageSize - 1) / pageSize
+	for index < totalPage {
+		page := index + 1
+		// TODO may be cacheable?
+		moreAnswers, err := q.getAnswersByAjax(page)
+		if err != nil {
+			logger.Error("加载第 %d 页回答失败，问题：%s，错误：%s", page, q.Link, err.Error())
+		} else {
+			answers = append(answers, moreAnswers...)
+		}
+		index++
+	}
+	return answers
+}
+
+// processSingleAnswer 处理一个回答的 HTML 片段，
 // 这段 HTML 可能来自问题页面，也可能来自 Ajax 接口
 func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	// 1. 获取链接
@@ -192,9 +274,11 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	} else {
 		voteText = strip(sel.Find("div.zm-votebar").Find("span.count").Text())
 	}
-	voteCount, _ := strconv.Atoi(voteText)
-	answer.setUpvote(voteCount)
+	answer.setUpvote(refineUpvoteNum(voteText))
 
-	// TODO 4. 获取内容
+	// 4. 获取内容
+	content := restructAnswerContent(goquery.CloneDocument(q.Doc()), sel)
+	answer.setContent(content)
+
 	return answer
 }
