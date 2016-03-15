@@ -85,6 +85,62 @@ func (user *User) GetDataID() string {
 	return dataId
 }
 
+// GetBio 返回用户的 BIO
+func (user *User) GetBio() string {
+	if user.IsAnonymous() {
+		return ""
+	}
+
+	if got, ok := user.fields["bio"]; ok {
+		return got.(string)
+	}
+
+	doc := user.Doc()
+
+	// <span class="bio" title="程序员，用 Python 和 Go 做服务端开发。">程序员，用 Python 和 Go 做服务端开发。</span>
+	bio := strip(doc.Find("span.bio").Text())
+	user.fields["bio"] = bio
+	return bio
+}
+
+// GetLocation 返回用户所在地
+func (user *User) GetLocation() string {
+	if user.IsAnonymous() {
+		return ""
+	}
+
+	if got, ok := user.fields["location"]; ok {
+		return got.(string)
+	}
+
+	doc := user.Doc()
+
+	// <span class="location item" title="深圳">深圳</span>
+	location := strip(doc.Find("span.location").Text())
+	user.fields["location"] = location
+	return location
+}
+
+// GetBusiness 返回用户的所在行业
+func (user *User) GetBusiness() string {
+	if user.IsAnonymous() {
+		return ""
+	}
+
+	if got, ok := user.fields["business"]; ok {
+		return got.(string)
+	}
+
+	doc := user.Doc()
+
+	// <span class="business item" title="互联网">
+	//   <a href="/topic/19550517" title="互联网" class="topic-link" data-token="19550517" data-topicid="99">互联网</a>
+	// </span>
+	business, _ := doc.Find("span.business").Attr("title")
+	user.fields["business"] = business
+	return business
+}
+
 // GetGender 返回用户的性别
 func (user *User) GetGender() string {
 	gender := "unknown"

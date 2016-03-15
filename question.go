@@ -170,7 +170,7 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	// 2. 获取作者
 	authorSel := sel.Find("div.zm-item-answer-author-info")
 	var author *User
-	if !authorSel.Has("a.author-link") {
+	if authorSel.Find("a.author-link").Size() == 0 {
 		// 匿名用户
 		author = NewUser("", "匿名用户")
 	} else {

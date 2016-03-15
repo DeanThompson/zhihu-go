@@ -102,7 +102,7 @@ func (s *Session) LoadConfig(cfg string) {
 // Login 登录并保存 cookies
 func (s *Session) Login() error {
 	if s.authenticated() {
-		logger.Info("已经是登录状态，不需要重复登录")
+		logger.Success("已经是登录状态，不需要重复登录")
 		return nil
 	}
 

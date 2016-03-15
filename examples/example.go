@@ -74,6 +74,10 @@ func showAnswer(answer *zhihu.Answer) {
 
 	for i, voter := range answer.GetVoters() {
 		logger.Info("	voter-%d: %s", i, voter.String())
+		if i > 10 {
+			logger.Info("	other voters ...")
+			break
+		}
 	}
 }
 
@@ -90,6 +94,9 @@ func showUser(user *zhihu.User) {
 	logger.Info("	is anonymous: %v", user.IsAnonymous())
 	logger.Info("	userId: %s", user.GetUserID())
 	logger.Info("	dataId: %s", user.GetDataID())
+	logger.Info("	bio: %s", user.GetBio())
+	logger.Info("	location: %s", user.GetLocation())
+	logger.Info("	business: %s", user.GetBusiness())
 	logger.Info("	gender: %s", user.GetGender())
 	logger.Info("	followers num: %d", user.GetFollowersNum())
 	logger.Info("	followees num: %d", user.GetFolloweesNum())
