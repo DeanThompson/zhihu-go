@@ -220,21 +220,77 @@ func (user *User) GetFollowers() []*User {
 	return users
 }
 
-// TODO GetAsks 返回用户提过的问题
+// GetAsks 返回用户提过的问题
 func (user *User) GetAsks() []*Question {
 	if user.IsAnonymous() {
 		return nil
 	}
-	return nil
+
+	total := user.GetAsksNum()
+	if total == 0 {
+		return nil
+	}
+
+	page := 1
+	questions := make([]*Question, 0, total)
+	for page < ((total-1)/pageSize + 2) {
+		link := urlJoin(user.Link, fmt.Sprintf("/asks?page=%d", page))
+		doc, err := newDocumentFromUrl(link)
+		if err != nil {
+			return nil
+		}
+
+		doc.Find("div#zh-profile-ask-list").Children().Each(func(index int, sel *goquery.Selection) {
+			a := sel.Find("a.question_link")
+			title := strip(a.Text())
+			href, _ := a.Attr("href")
+			questionLink := makeZhihuLink(href)
+			// TODO 设置关注数、回答数？
+			questions = append(questions, NewQuestion(questionLink, title))
+		})
+		page++
+	}
+	return questions
 }
 
-// TODO GetAnswers 返回用户所有的回答
+// GetAnswers 返回用户所有的回答
 func (user *User) GetAnswers() []*Answer {
 	if user.IsAnonymous() {
 		return nil
 	}
 
-	return nil
+	total := user.GetAnswersNum()
+	if total == 0 {
+		return nil
+	}
+
+	page := 1
+	answers := make([]*Answer, 0, total)
+	for page < ((total-1)/pageSize + 2) {
+		link := urlJoin(user.Link, fmt.Sprintf("/answers?page=%d", page))
+		doc, err := newDocumentFromUrl(link)
+		if err != nil {
+			return nil
+		}
+
+		doc.Find("div#zh-profile-answer-list").Children().Each(func(index int, sel *goquery.Selection) {
+			a := sel.Find("a.question_link")
+			qTitle := strip(a.Text())
+			answerHref, _ := a.Attr("href")
+			qLink := makeZhihuLink(answerHref[0:strings.Index(answerHref, "/answer")])
+			question := NewQuestion(qLink, qTitle)
+			thisAnswer := NewAnswer(makeZhihuLink(answerHref), question, user)
+
+			voteText, _ := sel.Find("a.zm-item-vote-count").Attr("data-votecount")
+			vote, _ := strconv.Atoi(voteText)
+			thisAnswer.setUpvote(vote)
+
+			answers = append(answers, thisAnswer)
+		})
+		page++
+	}
+
+	return answers
 }
 
 // TODO GetCollections 返回用户的收藏夹

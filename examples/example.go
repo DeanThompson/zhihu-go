@@ -15,8 +15,8 @@ var (
 func main() {
 	zhihu.Init("./config.json")
 
-	// 李阳良
-	user := zhihu.NewUser("https://www.zhihu.com/people/leonyoung", "")
+	// 豆子，人民艺术家
+	user := zhihu.NewUser("https://www.zhihu.com/people/douzishushu", "")
 	showUser(user)
 
 	logger.Success("========== split ==========")
