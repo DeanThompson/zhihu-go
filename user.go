@@ -155,6 +155,16 @@ func (user *User) GetFolloweesNum() int {
 	return user.getFollowersNumOrFolloweesNum("followees-num")
 }
 
+// GetFollowedColumnsNum 返回用户关注的专栏数量
+func (user *User) GetFollowedColumnsNum() int {
+	return user.getFollowedColumnsOrTopicsNum("followed-columns-num")
+}
+
+// GetFollowedTopicsNum 返回用户关注的话题数量
+func (user *User) GetFollowedTopicsNum() int {
+	return user.getFollowedColumnsOrTopicsNum("followed-topics-num")
+}
+
 // GetAgreeNum 返回用户的点赞数
 func (user *User) GetAgreeNum() int {
 	return user.getAgreeOrThanksNum("agree-num")
@@ -314,6 +324,36 @@ func (user *User) getFollowersNumOrFolloweesNum(cacheKey string) int {
 	num, _ := strconv.Atoi(value)
 	user.fields[cacheKey] = num
 	return num
+}
+
+func (user *User) getFollowedColumnsOrTopicsNum(cacheKey string) int {
+	if user.IsAnonymous() {
+		return 0
+	}
+
+	if got, ok := user.fields[cacheKey]; ok {
+		return got.(int)
+	}
+
+	var selector string
+	switch cacheKey {
+	case "followed-topics-num":
+		selector = "div.zm-profile-side-topics"
+	case "followed-columns-num":
+		selector = "div.zm-profile-side-columns"
+	default:
+		return 0
+	}
+
+	doc := user.Doc()
+	result := 0
+	sel := doc.Find(selector)
+	if sel.Size() > 0 {
+		text := sel.Parent().Find("a.zg-link-litblue").Find("strong").Text()
+		result = reMatchInt(strip(text))
+	}
+	user.setIntAttr(cacheKey, result)
+	return result
 }
 
 func (user *User) getAgreeOrThanksNum(cacheKey string) int {

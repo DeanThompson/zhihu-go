@@ -119,6 +119,8 @@ func showUser(user *zhihu.User) {
 	logger.Info("	gender: %s", user.GetGender())
 	logger.Info("	followers num: %d", user.GetFollowersNum())
 	logger.Info("	followees num: %d", user.GetFolloweesNum())
+	logger.Info("	followed columns num: %d", user.GetFollowedColumnsNum())
+	logger.Info("	followed topics num: %d", user.GetFollowedTopicsNum())
 	logger.Info("	agree num: %d", user.GetAgreeNum())
 	logger.Info("	thanks num: %d", user.GetThanksNum())
 	logger.Info("	asks num: %d", user.GetAsksNum())
