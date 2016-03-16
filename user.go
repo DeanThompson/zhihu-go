@@ -1,8 +1,13 @@
 package zhihu
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
+	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 var (
@@ -59,10 +64,26 @@ func (user *User) GetDataID() string {
 
 	doc := user.Doc()
 
-	// <button data-follow="m:button" data-id="b6f80220378c8b0b78175dd6a0b9c680" class="zg-btn zg-btn-unfollow zm-rich-follow-btn">
-	//   取消关注
-	// </button>
-	dataId, _ := doc.Find("button.zg-btn.zm-rich-follow-btn").Attr("data-id")
+	// 分两种情况：自己和其他用户
+	// 1. 其他用户
+	// <div class="zm-profile-header-op-btns clearfix">
+	//   <button data-follow="m:button" data-id="e22dba11081f3d71afc10b9c8c641672" class="zg-btn zg-btn-unfollow zm-rich-follow-btn">取消关注</button>
+	// </div>
+	//
+	// 2. 自己
+	// <input type="hidden" name="dest_id" value="2f5c3f612108780e7d5400d8f74ab449">
+	var dataId string
+	btns := doc.Find("div.zm-profile-header-op-btns")
+	if btns.Size() > 0 {
+		// 1. 其他用户
+		dataId, _ = btns.Find("button").Attr("data-id")
+	} else {
+		// 2. 自己
+		script := doc.Find(`script[data-name="ga_vars"]`).Text()
+		data := make(map[string]interface{})
+		json.Unmarshal([]byte(script), &data)
+		dataId = data["user_hash"].(string)
+	}
 	user.fields["data-id"] = dataId
 	return dataId
 }
@@ -80,7 +101,7 @@ func (user *User) GetBio() string {
 	doc := user.Doc()
 
 	// <span class="bio" title="程序员，用 Python 和 Go 做服务端开发。">程序员，用 Python 和 Go 做服务端开发。</span>
-	bio := strip(doc.Find("span.bio").Text())
+	bio := strip(doc.Find("span.bio").Eq(0).Text())
 	user.fields["bio"] = bio
 	return bio
 }
@@ -100,7 +121,7 @@ func (user *User) GetEducation() string {
 	return user.getProfile("education")
 }
 
-// GetGender 返回用户的性别
+// GetGender 返回用户的性别（male/female/unknown）
 func (user *User) GetGender() string {
 	gender := "unknown"
 	if user.IsAnonymous() {
@@ -169,21 +190,24 @@ func (user *User) GetLogsNum() int {
 	return user.getProfileNum("logs-num")
 }
 
-// TODO GetFollowees 返回用户关注的人
+// GetFollowees 返回用户关注的人
 func (user *User) GetFollowees() []*User {
-	if user.IsAnonymous() {
+	users, err := user.getFolloweesOrFollowers("followees")
+	if err != nil {
+		logger.Error("获取 %s 关注的人失败：%s", user.String(), err.Error())
 		return nil
 	}
-
-	return nil
+	return users
 }
 
-// TODO GetFollowers 返回用户的粉丝列表
+// GetFollowers 返回用户的粉丝列表
 func (user *User) GetFollowers() []*User {
-	if user.IsAnonymous() {
+	users, err := user.getFolloweesOrFollowers("followers")
+	if err != nil {
+		logger.Error("获取 %s 的粉丝失败：%s", user.String(), err.Error())
 		return nil
 	}
-	return nil
+	return users
 }
 
 // TODO GetAsks 返回用户提过的问题
@@ -366,6 +390,109 @@ func (user *User) getProfileNum(cacheKey string) int {
 	return num
 }
 
+func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
+	if user.IsAnonymous() {
+		return nil, nil
+	}
+
+	var (
+		referer, ajaxUrl string
+		offset, totalNum int
+		hashId           = user.GetDataID()
+	)
+
+	if eeOrEr == "followees" {
+		referer = urlJoin(user.Link, "/followees")
+		ajaxUrl = makeZhihuLink("/node/ProfileFolloweesListV2")
+		totalNum = user.GetFollowersNum()
+	} else {
+		referer = urlJoin(user.Link, "/followers")
+		ajaxUrl = makeZhihuLink("/node/ProfileFollowersListV2")
+		totalNum = user.GetFolloweesNum()
+	}
+
+	form := url.Values{}
+	form.Set("_xsrf", user.GetXsrf())
+	form.Set("method", "next")
+
+	users := make([]*User, 0, totalNum)
+	for {
+		form.Set("params", fmt.Sprintf(`{"offset":%d,"order_by":"created","hash_id":"%s"}`, offset, hashId))
+		body := strings.NewReader(form.Encode())
+		resp, err := gSession.Ajax(ajaxUrl, body, referer)
+		if err != nil {
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+		result := dataListResult{}
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		if err != nil {
+			logger.Error("json decode failed: %s", err.Error())
+			return nil, err
+		}
+
+		for _, userHtml := range result.Msg {
+			thisUser, err := newUserFromHTML(userHtml)
+			if err != nil {
+				return nil, err
+			}
+			users = append(users, thisUser)
+		}
+
+		if len(result.Msg) < pageSize {
+			break
+		} else {
+			offset += pageSize
+		}
+	}
+	return users, nil
+}
+
+func (user *User) setStringAttr(attr, value string) {
+	user.fields[attr] = value
+}
+
+func (user *User) setIntAttr(attr string, value int) {
+	user.fields[attr] = value
+}
+
 func isAnonymous(userId string) bool {
 	return userId == "匿名用户" || userId == "知乎用户"
+}
+
+func newUserFromHTML(html string) (*User, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		logger.Error("NewDocumentFromReader failed: %s", err.Error())
+		return nil, err
+	}
+
+	a := doc.Find("h2.zm-list-content-title").Find("a.zg-link")
+	userId := strip(a.Text())
+	link, _ := a.Attr("href")
+
+	user := NewUser(link, userId)
+
+	// 获取 BIO
+	bio := strip(doc.Find("div.zg-big-gray").Text())
+	user.setStringAttr("bio", bio)
+
+	// 获取关注者数量
+	followersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(0).Text()))
+	user.setIntAttr("followers-num", followersNum)
+
+	// 获取提问数
+	asksNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(1).Text()))
+	user.setIntAttr("asks-num", asksNum)
+
+	// 获取回答数
+	answersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(2).Text()))
+	user.setIntAttr("answers-num", answersNum)
+
+	// 获取赞同数
+	agreeNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(3).Text()))
+	user.setIntAttr("agree-num", agreeNum)
+
+	return user, nil
 }

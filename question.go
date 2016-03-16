@@ -11,10 +11,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-const (
-	pageSize = 20
-)
-
 // Question 表示一个知乎问题，可以用于获取其标题、详情、答案等信息
 type Question struct {
 	*ZhihuPage
@@ -171,11 +167,6 @@ func (q *Question) getAnswersOnIndex() []*Answer {
 	return answers
 }
 
-type answerListResult struct {
-	R   int      `json:"r"`   // 状态码，正确的情况为 0
-	Msg []string `json:"msg"` // 回答内容，每个元素都是一段 HTML 片段
-}
-
 // getAnswersByAjax 处理 “更多” 回答，调用 Ajax 接口
 func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 	offset := page * pageSize
@@ -199,7 +190,7 @@ func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 	}
 
 	defer resp.Body.Close()
-	result := answerListResult{}
+	result := dataListResult{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return nil, err

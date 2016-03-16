@@ -15,8 +15,8 @@ var (
 func main() {
 	zhihu.Init("./config.json")
 
-	// 黄继新
-	user := zhihu.NewUser("https://www.zhihu.com/people/jixin", "")
+	// 李阳良
+	user := zhihu.NewUser("https://www.zhihu.com/people/leonyoung", "")
 	showUser(user)
 
 	logger.Success("========== split ==========")
@@ -74,7 +74,6 @@ func showQuestion(question *zhihu.Question) {
 }
 
 func showAnswer(answer *zhihu.Answer) {
-	return
 	logger.Info("Answer fields:")
 	logger.Info("	url: %s", answer.Link)
 
@@ -129,27 +128,27 @@ func showUser(user *zhihu.User) {
 	logger.Info("	logs num: %d", user.GetLogsNum())
 
 	for i, follower := range user.GetFollowers() {
-		logger.Info("	follower-%d: %s", i, follower.String())
+		logger.Info("	follower-%d: %s", i+1, follower.String())
 	}
 
-	for i, followee := range user.GetFollowers() {
-		logger.Info("	followee-%d: %s", i, followee.String())
+	for i, followee := range user.GetFollowees() {
+		logger.Info("	followee-%d: %s", i+1, followee.String())
 	}
 
 	for i, ask := range user.GetAsks() {
-		logger.Info("	ask-%d: %s", i, ask.String())
+		logger.Info("	ask-%d: %s", i+1, ask.String())
 	}
 
 	for i, answer := range user.GetAnswers() {
-		logger.Info("	answer-%d: %s", i, answer.String())
+		logger.Info("	answer-%d: %s", i+1, answer.String())
 	}
 
 	for i, collection := range user.GetCollections() {
-		logger.Info("	collection-%d: %s", i, collection.String())
+		logger.Info("	collection-%d: %s", i+1, collection.String())
 	}
 
 	for i, like := range user.GetLikes() {
-		logger.Info("	like-%d: %s", i, like.String())
+		logger.Info("	like-%d: %s", i+1, like.String())
 	}
 }
 

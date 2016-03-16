@@ -38,10 +38,10 @@ func (auth *Auth) isPhone() bool {
 func (auth *Auth) toForm() url.Values {
 	if auth.isEmail() {
 		auth.loginType = "email"
-		auth.loginUrl = "http://www.zhihu.com/login/email"
+		auth.loginUrl = makeZhihuLink("/login/email")
 	} else if auth.isPhone() {
 		auth.loginType = "phone_num"
-		auth.loginUrl = "http://www.zhihu.com/login/phone_num"
+		auth.loginUrl = makeZhihuLink("/login/phone_num")
 	} else {
 		panic("无法判断登录类型: " + auth.Account)
 	}
@@ -117,7 +117,7 @@ func (s *Session) Login() error {
 	headers := newHTTPHeaders(true)
 	headers.Set("Content-Length", strconv.Itoa(len(form)))
 	headers.Set("Content-Type", "application/x-www-form-urlencoded")
-	headers.Set("Referer", "http://www.zhihu.com/")
+	headers.Set("Referer", baseZhihuUrl)
 	req.Header = headers
 
 	logger.Info("登录中，用户名：%s", s.auth.Account)
@@ -206,7 +206,7 @@ func (s *Session) Ajax(url string, body io.Reader, referer string) (*http.Respon
 
 // authenticated 检查是否已经登录（cookies 没有失效）
 func (s *Session) authenticated() bool {
-	originUrl := "https://www.zhihu.com/settings/profile"
+	originUrl := makeZhihuLink("/settings/profile")
 	resp, err := s.Get(originUrl)
 	if err != nil {
 		logger.Error("访问 profile 页面出错: %s", err.Error())
@@ -228,7 +228,7 @@ func (s *Session) buildLoginForm() url.Values {
 
 // 从 cookies 获取 _xsrf 用于 POST 请求
 func (s *Session) searchXsrf() string {
-	resp, err := s.Get("http://www.zhihu.com/")
+	resp, err := s.Get(baseZhihuUrl)
 	if err != nil {
 		panic("获取 _xsrf 失败：" + err.Error())
 	}
@@ -245,7 +245,7 @@ func (s *Session) searchXsrf() string {
 
 // downloadCaptcha 获取验证码，用于登录
 func (s *Session) downloadCaptcha() string {
-	url := fmt.Sprintf("http://www.zhihu.com/captcha.gif?r=%d", time.Now().Unix())
+	url := makeZhihuLink(fmt.Sprintf("/captcha.gif?r=%d", 1000*time.Now().Unix()))
 	logger.Info("获取验证码：%s", url)
 	resp, err := s.Get(url)
 	if err != nil {

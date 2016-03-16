@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -15,21 +16,33 @@ import (
 )
 
 const (
-	userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36"
+	userAgent    = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36"
+	baseZhihuUrl = "https://www.zhihu.com"
+	pageSize     = 20
 )
 
 var (
-	questionURLPattern   = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
-	collectionURLPattern = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
-	logger               = Logger{Enabled: true}
+	reQuestionURL   = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
+	reCollectionURL = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
+	reGetNumber     = regexp.MustCompile(`([0-9])+`)
+	logger          = Logger{Enabled: true}
 )
 
 func validQuestionURL(value string) bool {
-	return questionURLPattern.MatchString(value)
+	return reQuestionURL.MatchString(value)
 }
 
 func validCollectionURL(value string) bool {
-	return collectionURLPattern.MatchString(value)
+	return reCollectionURL.MatchString(value)
+}
+
+func reMatchInt(raw string) int {
+	matched := reGetNumber.FindStringSubmatch(raw)
+	if len(matched) == 0 {
+		return 0
+	}
+	rv, _ := strconv.Atoi(matched[0])
+	return rv
 }
 
 func newHTTPHeaders(isXhr bool) http.Header {
@@ -105,8 +118,17 @@ func readCaptchaInput() string {
 }
 
 func makeZhihuLink(path string) string {
-	path = strings.TrimLeft(path, "/")
-	return "http://www.zhihu.com/" + path
+	return urlJoin(baseZhihuUrl, path)
+}
+
+func urlJoin(base, path string) string {
+	if strings.HasSuffix(base, "/") {
+		base = strings.TrimRight(base, "/")
+	}
+	if strings.HasPrefix(path, "/") {
+		path = strings.TrimLeft(path, "/")
+	}
+	return base + "/" + path
 }
 
 // newDocumentFromUrl 会请求给定的 url，并返回一个 goquery.Document 对象用于解析
@@ -171,4 +193,10 @@ func (page *ZhihuPage) GetXsrf() string {
 	doc := page.Doc()
 	value, _ := doc.Find(`input[name="_xsrf"]`).Attr("value")
 	return value
+}
+
+// dataListResult 是获取关注者列表、关注人列表、问题的答案列表等 Ajax 请求的 JSON 返回值
+type dataListResult struct {
+	R   int      `json:"r"`   // 状态码，正确的情况为 0
+	Msg []string `json:"msg"` // 回答内容，每个元素都是一段 HTML 片段
 }
