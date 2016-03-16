@@ -21,9 +21,6 @@ type Question struct {
 
 	// title 是该问题的标题
 	title string
-
-	// fields 是字段缓存，避免重复解析页面
-	fields map[string]interface{}
 }
 
 // NewQuestion 通过给定的 URL 创建一个 Question 对象
@@ -35,7 +32,6 @@ func NewQuestion(link string, title string) *Question {
 	return &Question{
 		ZhihuPage: newZhihuPage(link),
 		title:     title,
-		fields:    make(map[string]interface{}),
 	}
 }
 
@@ -254,7 +250,7 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	var author *User
 	if authorSel.Find("a.author-link").Size() == 0 {
 		// 匿名用户
-		author = NewUser("", "匿名用户")
+		author = ANONYMOUS
 	} else {
 		// 具名用户
 		x := authorSel.Find("a.author-link")

@@ -17,9 +17,6 @@ type Answer struct {
 
 	// author 是该答案的作者
 	author *User
-
-	// fields 是一些其他信息的缓存
-	fields map[string]interface{}
 }
 
 // NewAnswer 用于创建一个 Answer 对象，其中 link 是必传的，question, author 可以为 nil
@@ -28,7 +25,6 @@ func NewAnswer(link string, question *Question, author *User) *Answer {
 		ZhihuPage: newZhihuPage(link),
 		question:  question,
 		author:    author,
-		fields:    make(map[string]interface{}),
 	}
 }
 
@@ -73,7 +69,7 @@ func (a *Answer) GetAuthor() *User {
 	doc := a.Doc()
 	sel := doc.Find("div.zm-item-answer-author-info").First()
 	if strip(sel.Text()) == "匿名用户" {
-		return NewUser("", "匿名用户")
+		return ANONYMOUS
 	}
 
 	node := sel.Find("a.author-link")

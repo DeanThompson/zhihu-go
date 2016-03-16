@@ -14,9 +14,6 @@ type Collection struct {
 
 	// name 是该收藏夹的名称
 	name string
-
-	// fields 是字段缓存，避免重复解析页面
-	fields map[string]interface{}
 }
 
 func NewCollection(link string, name string) *Collection {
@@ -27,7 +24,6 @@ func NewCollection(link string, name string) *Collection {
 	return &Collection{
 		ZhihuPage: newZhihuPage(link),
 		name:      name,
-		fields:    make(map[string]interface{}),
 	}
 }
 
@@ -79,6 +75,16 @@ func (c *Collection) GetFollowersNum() int {
 	num, _ := strconv.Atoi(text)
 	c.fields["followers-num"] = num
 	return num
+}
+
+// TODO GetFollowers 返回收藏夹的所有关注者
+func (c *Collection) GetFollowers() []*User {
+	return nil
+}
+
+// TODO GetQuestions 返回收藏夹里所有的问题
+func (c *Collection) GetQuestions() []*Question {
+	return nil
 }
 
 // TODO GetAllAnswers 返回收藏夹里所有的回答

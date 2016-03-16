@@ -23,15 +23,16 @@ const (
 	logsNumIndex
 )
 
+var (
+	ANONYMOUS = NewUser("", "匿名用户")
+)
+
 // User 表示一个知乎用户
 type User struct {
 	*ZhihuPage
 
 	// userId 表示用户的知乎 ID（用户名）
 	userId string
-
-	// fields 是字段缓存，避免重复解析页面
-	fields map[string]interface{}
 }
 
 // NewUser 创建一个用户对象
@@ -45,7 +46,6 @@ func NewUser(link string, userId string) *User {
 	return &User{
 		ZhihuPage: newZhihuPage(link),
 		userId:    userId,
-		fields:    make(map[string]interface{}),
 	}
 }
 

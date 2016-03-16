@@ -132,12 +132,16 @@ type ZhihuPage struct {
 
 	// doc 是 HTML document
 	doc *goquery.Document
+
+	// fields 是字段缓存，避免重复解析页面
+	fields map[string]interface{}
 }
 
 // newZhihuPage 是 private 的构造器
 func newZhihuPage(link string) *ZhihuPage {
 	return &ZhihuPage{
-		Link: link,
+		Link:   link,
+		fields: make(map[string]interface{}),
 	}
 }
 
@@ -157,7 +161,8 @@ func (page *ZhihuPage) Doc() *goquery.Document {
 
 // Refresh 会重新载入当前页面，获取最新的数据
 func (page *ZhihuPage) Refresh() (err error) {
-	page.doc, err = newDocumentFromUrl(page.Link)
+	page.fields = make(map[string]interface{})    // 清空缓存
+	page.doc, err = newDocumentFromUrl(page.Link) // 重载页面
 	return err
 }
 
