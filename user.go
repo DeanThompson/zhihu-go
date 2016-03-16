@@ -5,24 +5,6 @@ import (
 	"strconv"
 )
 
-const (
-	followeesNumIndex = iota
-	followersNumIndex
-)
-
-const (
-	agreeNumIndex = iota
-	thanksNumIndex
-)
-
-const (
-	asksNumIndex = iota
-	answersNumIndex
-	postsNumIndex
-	collectionsNumIndex
-	logsNumIndex
-)
-
 var (
 	ANONYMOUS = NewUser("", "匿名用户")
 )
@@ -105,40 +87,17 @@ func (user *User) GetBio() string {
 
 // GetLocation 返回用户所在地
 func (user *User) GetLocation() string {
-	if user.IsAnonymous() {
-		return ""
-	}
-
-	if got, ok := user.fields["location"]; ok {
-		return got.(string)
-	}
-
-	doc := user.Doc()
-
-	// <span class="location item" title="深圳">深圳</span>
-	location := strip(doc.Find("span.location").Text())
-	user.fields["location"] = location
-	return location
+	return user.getProfile("location")
 }
 
 // GetBusiness 返回用户的所在行业
 func (user *User) GetBusiness() string {
-	if user.IsAnonymous() {
-		return ""
-	}
+	return user.getProfile("business")
+}
 
-	if got, ok := user.fields["business"]; ok {
-		return got.(string)
-	}
-
-	doc := user.Doc()
-
-	// <span class="business item" title="互联网">
-	//   <a href="/topic/19550517" title="互联网" class="topic-link" data-token="19550517" data-topicid="99">互联网</a>
-	// </span>
-	business, _ := doc.Find("span.business").Attr("title")
-	user.fields["business"] = business
-	return business
+// GetEducation 返回用户的教育信息
+func (user *User) GetEducation() string {
+	return user.getProfile("education")
 }
 
 // GetGender 返回用户的性别
@@ -167,47 +126,47 @@ func (user *User) GetGender() string {
 
 // GetFollowersNum 返回用户的粉丝数量
 func (user *User) GetFollowersNum() int {
-	return user.getFollowersNumOrFolloweesNum(followersNumIndex)
+	return user.getFollowersNumOrFolloweesNum("followers-num")
 }
 
 // GetFolloweesNum 返回用户关注的数量
 func (user *User) GetFolloweesNum() int {
-	return user.getFollowersNumOrFolloweesNum(followeesNumIndex)
+	return user.getFollowersNumOrFolloweesNum("followees-num")
 }
 
 // GetAgreeNum 返回用户的点赞数
 func (user *User) GetAgreeNum() int {
-	return user.getAgreeOrThanksNum(agreeNumIndex)
+	return user.getAgreeOrThanksNum("agree-num")
 }
 
 // GetThanksNum 返回用户的感谢数
 func (user *User) GetThanksNum() int {
-	return user.getAgreeOrThanksNum(thanksNumIndex)
+	return user.getAgreeOrThanksNum("thanks-num")
 }
 
 // GetAsksNum 返回用户的提问数
 func (user *User) GetAsksNum() int {
-	return user.getProfileNum(asksNumIndex)
+	return user.getProfileNum("asks-num")
 }
 
 // GetAnswersNum 返回用户的回答数
 func (user *User) GetAnswersNum() int {
-	return user.getProfileNum(answersNumIndex)
+	return user.getProfileNum("answers-num")
 }
 
 // GetPostsNum 返回用户的专栏文章数量
 func (user *User) GetPostsNum() int {
-	return user.getProfileNum(postsNumIndex)
+	return user.getProfileNum("posts-num")
 }
 
 // GetCollectionsNum 返回用户的收藏夹数量
 func (user *User) GetCollectionsNum() int {
-	return user.getProfileNum(collectionsNumIndex)
+	return user.getProfileNum("collections-num")
 }
 
 // GetLogsNum 返回用户公共编辑数量
 func (user *User) GetLogsNum() int {
-	return user.getProfileNum(logsNumIndex)
+	return user.getProfileNum("logs-num")
 }
 
 // TODO GetFollowees 返回用户关注的人
@@ -279,24 +238,42 @@ func (user *User) String() string {
 	return fmt.Sprintf("<User: %s - %s>", user.userId, user.Link)
 }
 
-func (user *User) getFollowersNumOrFolloweesNum(index int) int {
+func (user *User) getProfile(cacheKey string) string {
 	if user.IsAnonymous() {
-		return 0
+		return ""
 	}
 
-	var cacheKey string
-	switch index {
-	case followersNumIndex:
-		cacheKey = "followers-num"
-	case followeesNumIndex:
-		cacheKey = "followees-num"
+	if got, ok := user.fields[cacheKey]; ok {
+		return got.(string)
 	}
-	if cacheKey == "" {
+
+	doc := user.Doc()
+
+	// <span class="location item" title="深圳">深圳</span>
+	// <span class="business item" title="互联网">...</span>
+	// <span class="education item" title="中山大学">...</span>
+	value, _ := doc.Find(fmt.Sprintf("span.%s", cacheKey)).Attr("title")
+	user.fields[cacheKey] = value
+	return value
+}
+
+func (user *User) getFollowersNumOrFolloweesNum(cacheKey string) int {
+	if user.IsAnonymous() {
 		return 0
 	}
 
 	if got, ok := user.fields[cacheKey]; ok {
 		return got.(int)
+	}
+
+	var index int
+	switch cacheKey {
+	case "followees-num":
+		index = 0
+	case "followers-num":
+		index = 1
+	default:
+		return 0
 	}
 
 	doc := user.Doc()
@@ -315,21 +292,18 @@ func (user *User) getFollowersNumOrFolloweesNum(index int) int {
 	return num
 }
 
-func (user *User) getAgreeOrThanksNum(index int) int {
+func (user *User) getAgreeOrThanksNum(cacheKey string) int {
 	if user.IsAnonymous() {
 		return 0
 	}
 
-	var cacheKey, selector string
-	switch index {
-	case agreeNumIndex:
-		cacheKey = "agree-num"
+	var selector string
+	switch cacheKey {
+	case "agree-num":
 		selector = "span.zm-profile-header-user-agree > strong"
-	case thanksNumIndex:
-		cacheKey = "thanks-num"
+	case "thanks-num":
 		selector = "span.zm-profile-header-user-thanks > strong"
-	}
-	if cacheKey == "" {
+	default:
 		return 0
 	}
 
@@ -351,29 +325,29 @@ func (user *User) getAgreeOrThanksNum(index int) int {
 	return num
 }
 
-func (user *User) getProfileNum(index int) int {
+func (user *User) getProfileNum(cacheKey string) int {
 	if user.IsAnonymous() {
 		return 0
 	}
 
-	var cacheKey string
-	switch index {
-	case asksNumIndex:
-		cacheKey = "asks-num"
-	case answersNumIndex:
-		cacheKey = "answers-num"
-	case postsNumIndex:
-		cacheKey = "posts-num"
-	case collectionsNumIndex:
-		cacheKey = "collections-num"
-	case logsNumIndex:
-		cacheKey = "logs-num"
-	}
-	if cacheKey == "" {
-		return 0
-	}
 	if got, ok := user.fields[cacheKey]; ok {
 		return got.(int)
+	}
+
+	var index int
+	switch cacheKey {
+	case "asks-num":
+		index = 0
+	case "answers-num":
+		index = 1
+	case "posts-num":
+		index = 2
+	case "collections-num":
+		index = 3
+	case "logs-num":
+		index = 4
+	default:
+		return 0
 	}
 
 	doc := user.Doc()
