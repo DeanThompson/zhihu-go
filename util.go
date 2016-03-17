@@ -195,6 +195,24 @@ func (page *ZhihuPage) GetXsrf() string {
 	return value
 }
 
+func (page *ZhihuPage) setField(field string, value interface{}) {
+	page.fields[field] = value
+}
+
+func (page *ZhihuPage) getIntField(field string) (value int, exists bool) {
+	if got, ok := page.fields[field]; ok {
+		return got.(int), true
+	}
+	return 0, false
+}
+
+func (page *ZhihuPage) getStringField(field string) (value string, exists bool) {
+	if got, ok := page.fields[field]; ok {
+		return got.(string), true
+	}
+	return "", false
+}
+
 // dataListResult 是获取关注者列表、关注人列表、问题的答案列表等 Ajax 请求的 JSON 返回值
 type dataListResult struct {
 	R   int      `json:"r"`   // 状态码，正确的情况为 0

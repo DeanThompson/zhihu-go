@@ -84,6 +84,7 @@ func showAnswer(answer *zhihu.Answer) {
 	logger.Info("	author: %s", answer.GetAuthor().String())
 	logger.Info("	upvote num: %d", answer.GetUpvote())
 	logger.Info("	visit times: %d", answer.GetVisitTimes())
+	logger.Info("	comments num: %d", answer.GetCommentsNum())
 	logger.Info("	data ID: %d", answer.GetID())
 
 	// dump content

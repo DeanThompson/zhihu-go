@@ -62,8 +62,8 @@ func (c *Collection) GetCreator() *User {
 
 // GetFollowersNum 返回收藏夹的关注者数量
 func (c *Collection) GetFollowersNum() int {
-	if got, ok := c.fields["followers-num"]; ok {
-		return got.(int)
+	if got, ok := c.getIntField("followers-num"); ok {
+		return got
 	}
 
 	doc := c.Doc()
@@ -73,7 +73,7 @@ func (c *Collection) GetFollowersNum() int {
 	// </a>
 	text := strip(doc.Find(`a[data-za-a="visit_collection_followers"]`).Text())
 	num, _ := strconv.Atoi(text)
-	c.fields["followers-num"] = num
+	c.setField("followers-num", num)
 	return num
 }
 

@@ -44,20 +44,20 @@ func (q *Question) GetTitle() string {
 
 // GetDetail 获取问题描述
 func (q *Question) GetDetail() string {
-	if got, ok := q.fields["detail"]; ok {
-		return got.(string)
+	if got, ok := q.getStringField("detail"); ok {
+		return got
 	}
 
 	doc := q.Doc()
 	detail := strip(doc.Find("div#zh-question-detail").First().Text())
-	q.fields["detail"] = detail
+	q.setField("detail", detail)
 	return detail
 }
 
 // GetAnswerNum 获取问题回答数量
 func (q *Question) GetAnswersNum() int {
-	if got, ok := q.fields["answer-num"]; ok {
-		return got.(int)
+	if got, ok := q.getIntField("answer-num"); ok {
+		return got
 	}
 
 	doc := q.Doc()
@@ -66,20 +66,20 @@ func (q *Question) GetAnswersNum() int {
 	if exists {
 		answerNum, _ = strconv.Atoi(data)
 	}
-	q.fields["answer-num"] = answerNum
+	q.setField("answer-num", answerNum)
 	return answerNum
 }
 
 // GetFollowersNum 获取问题关注数量
 func (q *Question) GetFollowersNum() int {
-	if got, ok := q.fields["followers-num"]; ok {
-		return got.(int)
+	if got, ok := q.getIntField("followers-num"); ok {
+		return got
 	}
 
 	doc := q.Doc()
 	text := doc.Find("div.zg-gray-normal>a>strong").Text()
 	followersNum, _ := strconv.Atoi(text)
-	q.fields["followers-num"] = followersNum
+	q.setField("followers-num", followersNum)
 	return followersNum
 }
 
@@ -94,7 +94,7 @@ func (q *Question) GetTopics() []string {
 	topics := selection.Map(func(index int, node *goquery.Selection) string {
 		return strip(node.Text())
 	})
-	q.fields["topics"] = topics
+	q.setField("topics", topics)
 	return topics
 }
 
@@ -136,8 +136,8 @@ func (q *Question) GetTopAnswer() *Answer {
 
 // GetVisitTimes 获取问题的访问次数
 func (q *Question) GetVisitTimes() int {
-	if got, ok := q.fields["visit-times"]; ok {
-		return got.(int)
+	if got, ok := q.getIntField("visit-times"); ok {
+		return got
 	}
 
 	doc := q.Doc()
@@ -146,7 +146,7 @@ func (q *Question) GetVisitTimes() int {
 	if exists {
 		visitTimes, _ = strconv.Atoi(content)
 	}
-	q.fields["visit-times"] = visitTimes
+	q.setField("visit-times", visitTimes)
 	return visitTimes
 }
 

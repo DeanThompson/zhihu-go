@@ -58,8 +58,8 @@ func (user *User) GetDataID() string {
 		return ""
 	}
 
-	if got, ok := user.fields["data-id"]; ok {
-		return got.(string)
+	if got, ok := user.getStringField("data-id"); ok {
+		return got
 	}
 
 	doc := user.Doc()
@@ -84,7 +84,7 @@ func (user *User) GetDataID() string {
 		json.Unmarshal([]byte(script), &data)
 		dataId = data["user_hash"].(string)
 	}
-	user.fields["data-id"] = dataId
+	user.setField("data-id", dataId)
 	return dataId
 }
 
@@ -94,15 +94,15 @@ func (user *User) GetBio() string {
 		return ""
 	}
 
-	if got, ok := user.fields["bio"]; ok {
-		return got.(string)
+	if got, ok := user.getStringField("bio"); ok {
+		return got
 	}
 
 	doc := user.Doc()
 
 	// <span class="bio" title="程序员，用 Python 和 Go 做服务端开发。">程序员，用 Python 和 Go 做服务端开发。</span>
 	bio := strip(doc.Find("span.bio").Eq(0).Text())
-	user.fields["bio"] = bio
+	user.setField("bio", bio)
 	return bio
 }
 
@@ -128,8 +128,8 @@ func (user *User) GetGender() string {
 		return gender
 	}
 
-	if got, ok := user.fields["gender"]; ok {
-		return got.(string)
+	if got, ok := user.getStringField("gender"); ok {
+		return got
 	}
 
 	doc := user.Doc()
@@ -141,7 +141,7 @@ func (user *User) GetGender() string {
 	} else {
 		gender = "female"
 	}
-	user.fields["gender"] = gender
+	user.setField("gender", gender)
 	return gender
 }
 
@@ -333,8 +333,8 @@ func (user *User) getProfile(cacheKey string) string {
 		return ""
 	}
 
-	if got, ok := user.fields[cacheKey]; ok {
-		return got.(string)
+	if got, ok := user.getStringField(cacheKey); ok {
+		return got
 	}
 
 	doc := user.Doc()
@@ -343,7 +343,7 @@ func (user *User) getProfile(cacheKey string) string {
 	// <span class="business item" title="互联网">...</span>
 	// <span class="education item" title="中山大学">...</span>
 	value, _ := doc.Find(fmt.Sprintf("span.%s", cacheKey)).Attr("title")
-	user.fields[cacheKey] = value
+	user.setField(cacheKey, value)
 	return value
 }
 
@@ -352,8 +352,8 @@ func (user *User) getFollowersNumOrFolloweesNum(cacheKey string) int {
 		return 0
 	}
 
-	if got, ok := user.fields[cacheKey]; ok {
-		return got.(int)
+	if got, ok := user.getIntField(cacheKey); ok {
+		return got
 	}
 
 	var index int
@@ -378,7 +378,7 @@ func (user *User) getFollowersNumOrFolloweesNum(cacheKey string) int {
 	// </div>
 	value := doc.Find("div.zm-profile-side-following a strong").Eq(index).Text()
 	num, _ := strconv.Atoi(value)
-	user.fields[cacheKey] = num
+	user.setField(cacheKey, num)
 	return num
 }
 
@@ -387,8 +387,8 @@ func (user *User) getFollowedColumnsOrTopicsNum(cacheKey string) int {
 		return 0
 	}
 
-	if got, ok := user.fields[cacheKey]; ok {
-		return got.(int)
+	if got, ok := user.getIntField(cacheKey); ok {
+		return got
 	}
 
 	var selector string
@@ -408,7 +408,7 @@ func (user *User) getFollowedColumnsOrTopicsNum(cacheKey string) int {
 		text := sel.Parent().Find("a.zg-link-litblue").Find("strong").Text()
 		result = reMatchInt(strip(text))
 	}
-	user.setIntAttr(cacheKey, result)
+	user.setField(cacheKey, result)
 	return result
 }
 
@@ -427,8 +427,8 @@ func (user *User) getAgreeOrThanksNum(cacheKey string) int {
 		return 0
 	}
 
-	if got, ok := user.fields[cacheKey]; ok {
-		return got.(int)
+	if got, ok := user.getIntField(cacheKey); ok {
+		return got
 	}
 
 	doc := user.Doc()
@@ -441,7 +441,7 @@ func (user *User) getAgreeOrThanksNum(cacheKey string) int {
 	//   </div>
 	// </div>
 	num, _ := strconv.Atoi(doc.Find(selector).Text())
-	user.fields[cacheKey] = num
+	user.setField(cacheKey, num)
 	return num
 }
 
@@ -450,8 +450,8 @@ func (user *User) getProfileNum(cacheKey string) int {
 		return 0
 	}
 
-	if got, ok := user.fields[cacheKey]; ok {
-		return got.(int)
+	if got, ok := user.getIntField(cacheKey); ok {
+		return got
 	}
 
 	var index int
@@ -482,7 +482,7 @@ func (user *User) getProfileNum(cacheKey string) int {
 	// </div>
 	value := doc.Find("div.profile-navbar").Find("span.num").Eq(index).Text()
 	num, _ := strconv.Atoi(value)
-	user.fields[cacheKey] = num
+	user.setField(cacheKey, num)
 	return num
 }
 
@@ -545,14 +545,6 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
 	return users, nil
 }
 
-func (user *User) setStringAttr(attr, value string) {
-	user.fields[attr] = value
-}
-
-func (user *User) setIntAttr(attr string, value int) {
-	user.fields[attr] = value
-}
-
 func isAnonymous(userId string) bool {
 	return userId == "匿名用户" || userId == "知乎用户"
 }
@@ -572,23 +564,23 @@ func newUserFromHTML(html string) (*User, error) {
 
 	// 获取 BIO
 	bio := strip(doc.Find("div.zg-big-gray").Text())
-	user.setStringAttr("bio", bio)
+	user.setField("bio", bio)
 
 	// 获取关注者数量
 	followersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(0).Text()))
-	user.setIntAttr("followers-num", followersNum)
+	user.setField("followers-num", followersNum)
 
 	// 获取提问数
 	asksNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(1).Text()))
-	user.setIntAttr("asks-num", asksNum)
+	user.setField("asks-num", asksNum)
 
 	// 获取回答数
 	answersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(2).Text()))
-	user.setIntAttr("answers-num", answersNum)
+	user.setField("answers-num", answersNum)
 
 	// 获取赞同数
 	agreeNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(3).Text()))
-	user.setIntAttr("agree-num", agreeNum)
+	user.setField("agree-num", agreeNum)
 
 	return user, nil
 }

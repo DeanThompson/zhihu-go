@@ -30,19 +30,14 @@ func NewAnswer(link string, question *Question, author *User) *Answer {
 
 // GetID 返回该答案的数字 ID
 func (a *Answer) GetID() int {
-	if got, ok := a.fields["data-aid"]; ok {
-		return got.(int)
+	if got, ok := a.getIntField("data-aid"); ok {
+		return got
 	}
 
-	var (
-		doc = a.Doc()
-		aid = 0
-	)
-	text, exists := doc.Find("div.zm-item-answer.zm-item-expanded").Attr("data-aid")
-	if exists {
-		aid, _ = strconv.Atoi(text)
-	}
-	a.fields["data-aid"] = aid
+	doc := a.Doc()
+	text, _ := doc.Find("div.zm-item-answer.zm-item-expanded").Attr("data-aid")
+	aid, _ := strconv.Atoi(text)
+	a.setField("data-aid", aid)
 	return aid
 }
 
@@ -81,14 +76,14 @@ func (a *Answer) GetAuthor() *User {
 
 // GetUpvote 返回赞同数
 func (a *Answer) GetUpvote() int {
-	if got, ok := a.fields["upvote"]; ok {
-		return got.(int)
+	if got, ok := a.getIntField("upvote"); ok {
+		return got
 	}
 
 	doc := a.Doc()
 	text := strip(doc.Find("span.count").First().Text())
 	upvote := refineUpvoteNum(text)
-	a.fields["upvote"] = upvote
+	a.setField("upvote", upvote)
 	return upvote
 }
 
@@ -104,14 +99,14 @@ func (a *Answer) ToMarkdown() error {
 
 // GetContent 返回回答的内容
 func (a *Answer) GetContent() string {
-	if got, ok := a.fields["content"]; ok {
-		return got.(string)
+	if got, ok := a.getStringField("content"); ok {
+		return got
 	}
 
 	doc := a.Doc()
 	destDoc := goquery.CloneDocument(doc) // 从原文档 clone 一份，用于输出
 	content := restructAnswerContent(destDoc, doc.Selection)
-	a.fields["content"] = content
+	a.setField("content", content)
 	return content
 }
 
@@ -141,15 +136,27 @@ func (a *Answer) GetVoters() []*User {
 
 // GetVisitTimes 返回所属问题被浏览次数
 func (a *Answer) GetVisitTimes() int {
-	if got, ok := a.fields["visit-times"]; ok {
-		return got.(int)
+	if got, ok := a.getIntField("visit-times"); ok {
+		return got
 	}
 
 	doc := a.Doc()
 	text := strip(doc.Find("div.zm-side-section.zh-answer-status p strong").Text())
 	visitTimes, _ := strconv.Atoi(text)
-	a.fields["visit-times"] = visitTimes
+	a.setField("visit-times", visitTimes)
 	return visitTimes
+}
+
+func (a *Answer) GetCommentsNum() int {
+	if value, ok := a.getIntField("comment-num"); ok {
+		return value
+	}
+
+	doc := a.Doc()
+	text := strip(doc.Find("a.meta-item.toggle-comment").Text())
+	rv := reMatchInt(text)
+	a.setField("comment-num", rv)
+	return rv
 }
 
 func (a *Answer) String() string {
@@ -157,11 +164,11 @@ func (a *Answer) String() string {
 }
 
 func (a *Answer) setContent(value string) {
-	a.fields["content"] = value
+	a.setField("content", value)
 }
 
 func (a *Answer) setUpvote(value int) {
-	a.fields["upvote"] = value
+	a.setField("upvote", value)
 }
 
 func refineUpvoteNum(text string) int {
