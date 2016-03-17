@@ -218,3 +218,9 @@ type dataListResult struct {
 	R   int      `json:"r"`   // 状态码，正确的情况为 0
 	Msg []string `json:"msg"` // 回答内容，每个元素都是一段 HTML 片段
 }
+
+// topicListResult 是查询关注的话题返回值结构
+type topicListResult struct {
+	R   int           `json:"r"`
+	Msg []interface{} `json:"msg"` // 两个元素，第一个为话题数量，第二个是 HTML 片段
+}

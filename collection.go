@@ -16,13 +16,14 @@ type Collection struct {
 	name string
 }
 
-func NewCollection(link string, name string) *Collection {
+func NewCollection(link string, name string, creator *User) *Collection {
 	if !validCollectionURL(link) {
 		panic("收藏夹链接不正确：" + link)
 	}
 
 	return &Collection{
 		ZhihuPage: newZhihuPage(link),
+		creator:   creator,
 		name:      name,
 	}
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/DeanThompson/zhihu-go"
 )
@@ -40,7 +39,7 @@ func main() {
 
 	logger.Success("========== split ==========")
 
-	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19653044", "")
+	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19653044", "", nil)
 	showCollection(collection)
 }
 
@@ -51,7 +50,7 @@ func showQuestion(question *zhihu.Question) {
 	logger.Info("	detail: %s", question.GetDetail())
 	logger.Info("	answers num: %d", question.GetAnswersNum())
 	logger.Info("	followers num: %d", question.GetFollowersNum())
-	logger.Info("	topics: %s", strings.Join(question.GetTopics(), ", "))
+	logger.Info("	topics: %v", question.GetTopics())
 
 	allAnswers := question.GetAllAnswers()
 	for i, answer := range allAnswers {
@@ -129,6 +128,7 @@ func showUser(user *zhihu.User) {
 	logger.Info("	posts num: %d", user.GetPostsNum())
 	logger.Info("	collections num: %d", user.GetCollectionsNum())
 	logger.Info("	logs num: %d", user.GetLogsNum())
+	logger.Info("	followed topics: %v", user.GetFollowedTopics())
 
 	for i, follower := range user.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())

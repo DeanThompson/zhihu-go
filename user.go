@@ -293,13 +293,95 @@ func (user *User) GetAnswers() []*Answer {
 	return answers
 }
 
-// TODO GetCollections 返回用户的收藏夹
+// GetCollections 返回用户的收藏夹
 func (user *User) GetCollections() []*Collection {
 	if user.IsAnonymous() {
 		return nil
 	}
 
-	return nil
+	total := user.GetCollectionsNum()
+	if total == 0 {
+		return nil
+	}
+
+	page := 1
+	collections := make([]*Collection, 0, total)
+	for page < ((total-1)/pageSize + 2) {
+		link := urlJoin(user.Link, fmt.Sprintf("/collections?page=%d", page))
+		doc, err := newDocumentFromUrl(link)
+		if err != nil {
+			return nil
+		}
+
+		doc.Find("div.zh-profile-fav-list").Children().Each(func(index int, sel *goquery.Selection) {
+			a := sel.Find("a.zm-profile-fav-item-title")
+			cName := strip(a.Text())
+			href, _ := a.Attr("href")
+			cLink := makeZhihuLink(href)
+			thisCollection := NewCollection(cLink, cName, user)
+			collections = append(collections, thisCollection)
+		})
+	}
+
+	return collections
+}
+
+// GetFollowedTopics 返回用户关注的话题
+func (user *User) GetFollowedTopics() []string {
+	if user.IsAnonymous() {
+		return nil
+	}
+
+	total := user.GetFollowedTopicsNum()
+	if total == 0 {
+		return nil
+	}
+
+	var (
+		link       = urlJoin(user.Link, "/topics")
+		gotDataNum = pageSize
+		offset     = 0
+		topics     = make([]string, 0, total)
+	)
+
+	form := url.Values{}
+	form.Set("_xsrf", user.GetXsrf())
+	form.Set("start", "0")
+
+	for gotDataNum == pageSize {
+		form.Set("offset", strconv.Itoa(offset))
+		body := strings.NewReader(form.Encode())
+		resp, err := gSession.Ajax(link, body, link)
+		if err != nil {
+			logger.Error("查询关注的话题失败，用户：%s, 参数：%s", user.String(), form.Encode())
+			return nil
+		}
+		defer resp.Body.Close()
+		result := topicListResult{}
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		if err != nil {
+			logger.Error("解析返回值 json 失败：%s", err.Error())
+			return nil
+		}
+
+		topicsHtml := result.Msg[1].(string)
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(topicsHtml))
+		if err != nil {
+			logger.Error("解析返回的 HTML 失败：%s", err.Error())
+			return nil
+		}
+
+		doc.Find("div.zm-profile-section-item").Each(func(index int, sel *goquery.Selection) {
+			// TODO 定义 Topic 类，并返回 []*Topic 类型
+			tName := strip(sel.Find("strong").Text())
+			topics = append(topics, tName)
+		})
+
+		gotDataNum = int(result.Msg[0].(float64))
+		offset += gotDataNum
+	}
+
+	return topics
 }
 
 // TODO GetLikes 返回用户赞过的回答
