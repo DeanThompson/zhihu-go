@@ -98,6 +98,11 @@ func (q *Question) GetTopics() []string {
 	return topics
 }
 
+// TODO GetFollowers 获取关注该问题的用户
+func (q *Question) GetFollowers() []*User {
+	return nil
+}
+
 // GetAllAnswers 获取问题的所有答案
 func (q *Question) GetAllAnswers() []*Answer {
 	return q.GetTopXAnswers(q.GetAnswersNum())
@@ -182,7 +187,7 @@ func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 	form.Set("method", "next")
 	form.Set("params", fmt.Sprintf(`{"url_token":%d,"pagesize":%d,"offset":%d}`, urlToken, pageSize, offset))
 
-	link := "http://www.zhihu.com/node/QuestionAnswerListV2"
+	link := makeZhihuLink("/node/QuestionAnswerListV2")
 	body := strings.NewReader(form.Encode())
 	resp, err := gSession.Ajax(link, body, q.Link)
 	if err != nil {
@@ -190,7 +195,7 @@ func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 	}
 
 	defer resp.Body.Close()
-	result := dataListResult{}
+	result := nodeListResult{}
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return nil, err

@@ -14,14 +14,14 @@ var (
 func main() {
 	zhihu.Init("./config.json")
 
-	// 豆子，人民艺术家
-	user := zhihu.NewUser("https://www.zhihu.com/people/douzishushu", "")
+	// 钟宇腾，Bug Creator
+	user := zhihu.NewUser("https://www.zhihu.com/people/zonyitoo", "")
 	showUser(user)
 
 	logger.Success("========== split ==========")
 
-	// 龙有九个儿子，是跟谁生的？为什么「龙生九子，各不成龙」？
-	questionUrl := "https://www.zhihu.com/question/23759686"
+	// Python 编程，应该养成哪些好的习惯？
+	questionUrl := "https://www.zhihu.com/question/28966220"
 	question := zhihu.NewQuestion(questionUrl, "")
 	showQuestion(question)
 
@@ -39,7 +39,8 @@ func main() {
 
 	logger.Success("========== split ==========")
 
-	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19653044", "", nil)
+	// 黄继新 A4U
+	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19677733", "", nil)
 	showCollection(collection)
 }
 
@@ -106,6 +107,10 @@ func showCollection(collection *zhihu.Collection) {
 	logger.Info("	name: %s", collection.GetName())
 	logger.Info("	creator: %s", collection.GetCreator().String())
 	logger.Info("	followers num: %d", collection.GetFollowersNum())
+
+	for i, follower := range collection.GetFollowers() {
+		logger.Info("	follower-%d: %s", i+1, follower.String())
+	}
 }
 
 func showUser(user *zhihu.User) {

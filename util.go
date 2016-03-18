@@ -213,14 +213,14 @@ func (page *ZhihuPage) getStringField(field string) (value string, exists bool) 
 	return "", false
 }
 
-// dataListResult 是获取关注者列表、关注人列表、问题的答案列表等 Ajax 请求的 JSON 返回值
-type dataListResult struct {
+// nodeListResult 是形如 /node/XXListV2 这样的 Ajax 请求的 JSON 返回值
+type nodeListResult struct {
 	R   int      `json:"r"`   // 状态码，正确的情况为 0
 	Msg []string `json:"msg"` // 回答内容，每个元素都是一段 HTML 片段
 }
 
-// topicListResult 是查询关注的话题返回值结构
-type topicListResult struct {
+// normalAjaxResult 是页面内，目标 URL 和当前页面 URL 相同的 Ajax 请求返回的 JSON 数据
+type normalAjaxResult struct {
 	R   int           `json:"r"`
 	Msg []interface{} `json:"msg"` // 两个元素，第一个为话题数量，第二个是 HTML 片段
 }

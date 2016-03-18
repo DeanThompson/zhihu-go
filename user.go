@@ -248,11 +248,11 @@ func (user *User) GetAsks() []*Question {
 			thisQuestion := NewQuestion(questionLink, title)
 
 			// 获取回答数
-			answersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(4)))
+			answersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(4).Text()))
 			thisQuestion.setAnswersNum(answersNum)
 
 			// 获取关注数
-			followersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(6)))
+			followersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(6).Text()))
 			thisQuestion.setFollowersNum(followersNum)
 
 			// 获取浏览量
@@ -326,7 +326,7 @@ func (user *User) GetCollections() []*Collection {
 			return nil
 		}
 
-		doc.Find("div.zh-profile-fav-list").Children().Each(func(index int, sel *goquery.Selection) {
+		doc.Find("div.zm-profile-section-item").Each(func(index int, sel *goquery.Selection) {
 			a := sel.Find("a.zm-profile-fav-item-title")
 			cName := strip(a.Text())
 			href, _ := a.Attr("href")
@@ -334,6 +334,8 @@ func (user *User) GetCollections() []*Collection {
 			thisCollection := NewCollection(cLink, cName, user)
 			collections = append(collections, thisCollection)
 		})
+
+		page++
 	}
 
 	return collections
@@ -363,24 +365,8 @@ func (user *User) GetFollowedTopics() []string {
 
 	for gotDataNum == pageSize {
 		form.Set("offset", strconv.Itoa(offset))
-		body := strings.NewReader(form.Encode())
-		resp, err := gSession.Ajax(link, body, link)
+		doc, dataNum, err := newDocByNormalAjax(link, form)
 		if err != nil {
-			logger.Error("查询关注的话题失败，用户：%s, 参数：%s", user.String(), form.Encode())
-			return nil
-		}
-		defer resp.Body.Close()
-		result := topicListResult{}
-		err = json.NewDecoder(resp.Body).Decode(&result)
-		if err != nil {
-			logger.Error("解析返回值 json 失败：%s", err.Error())
-			return nil
-		}
-
-		topicsHtml := result.Msg[1].(string)
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(topicsHtml))
-		if err != nil {
-			logger.Error("解析返回的 HTML 失败：%s", err.Error())
 			return nil
 		}
 
@@ -390,7 +376,7 @@ func (user *User) GetFollowedTopics() []string {
 			topics = append(topics, tName)
 		})
 
-		gotDataNum = int(result.Msg[0].(float64))
+		gotDataNum = dataNum
 		offset += gotDataNum
 	}
 
@@ -616,7 +602,7 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
 		}
 
 		defer resp.Body.Close()
-		result := dataListResult{}
+		result := nodeListResult{}
 		err = json.NewDecoder(resp.Body).Decode(&result)
 		if err != nil {
 			logger.Error("json decode failed: %s", err.Error())
@@ -640,6 +626,22 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
 	return users, nil
 }
 
+func (user *User) setFollowersNum(value int) {
+	user.setField("followers-num", value)
+}
+
+func (user *User) setAsksNum(value int) {
+	user.setField("asks-num", value)
+}
+
+func (user *User) setAnswersNum(value int) {
+	user.setField("answers-num", value)
+}
+
+func (user *User) setAgreeNum(value int) {
+	user.setField("agree-num", value)
+}
+
 func isAnonymous(userId string) bool {
 	return userId == "匿名用户" || userId == "知乎用户"
 }
@@ -651,31 +653,40 @@ func newUserFromHTML(html string) (*User, error) {
 		return nil, err
 	}
 
-	a := doc.Find("h2.zm-list-content-title").Find("a.zg-link")
+	return newUserFromSelector(doc.Selection), nil
+}
+
+func newUserFromSelector(sel *goquery.Selection) *User {
+	a := sel.Find("h2.zm-list-content-title").Find("a.zg-link")
+	if a.Size() == 0 {
+		// 匿名用户，没有用户主页入口
+		return ANONYMOUS
+	}
+
 	userId := strip(a.Text())
 	link, _ := a.Attr("href")
 
 	user := NewUser(link, userId)
 
 	// 获取 BIO
-	bio := strip(doc.Find("div.zg-big-gray").Text())
+	bio := strip(sel.Find("div.zg-big-gray").Text())
 	user.setField("bio", bio)
 
 	// 获取关注者数量
-	followersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(0).Text()))
-	user.setField("followers-num", followersNum)
+	followersNum := reMatchInt(strip(sel.Find("div.details").Find("a").Eq(0).Text()))
+	user.setFollowersNum(followersNum)
 
 	// 获取提问数
-	asksNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(1).Text()))
-	user.setField("asks-num", asksNum)
+	asksNum := reMatchInt(strip(sel.Find("div.details").Find("a").Eq(1).Text()))
+	user.setAsksNum(asksNum)
 
 	// 获取回答数
-	answersNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(2).Text()))
-	user.setField("answers-num", answersNum)
+	answersNum := reMatchInt(strip(sel.Find("div.details").Find("a").Eq(2).Text()))
+	user.setAnswersNum(answersNum)
 
 	// 获取赞同数
-	agreeNum := reMatchInt(strip(doc.Find("div.details").Find("a").Eq(3).Text()))
-	user.setField("agree-num", agreeNum)
+	agreeNum := reMatchInt(strip(sel.Find("div.details").Find("a").Eq(3).Text()))
+	user.setAgreeNum(agreeNum)
 
-	return user, nil
+	return user
 }
