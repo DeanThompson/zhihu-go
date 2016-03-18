@@ -56,7 +56,7 @@ func (q *Question) GetDetail() string {
 
 // GetAnswerNum 获取问题回答数量
 func (q *Question) GetAnswersNum() int {
-	if got, ok := q.getIntField("answer-num"); ok {
+	if got, ok := q.getIntField("answers-num"); ok {
 		return got
 	}
 
@@ -66,7 +66,7 @@ func (q *Question) GetAnswersNum() int {
 	if exists {
 		answerNum, _ = strconv.Atoi(data)
 	}
-	q.setField("answer-num", answerNum)
+	q.setField("answers-num", answerNum)
 	return answerNum
 }
 
@@ -268,4 +268,16 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	answer.setContent(content)
 
 	return answer
+}
+
+func (q *Question) setFollowersNum(value int) {
+	q.setField("followers-num", value)
+}
+
+func (q *Question) setAnswersNum(value int) {
+	q.setField("answers-num", value)
+}
+
+func (q *Question) setVisitTimes(value int) {
+	q.setField("visit-times", value)
 }

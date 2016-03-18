@@ -245,8 +245,21 @@ func (user *User) GetAsks() []*Question {
 			title := strip(a.Text())
 			href, _ := a.Attr("href")
 			questionLink := makeZhihuLink(href)
-			// TODO 设置关注数、回答数？
-			questions = append(questions, NewQuestion(questionLink, title))
+			thisQuestion := NewQuestion(questionLink, title)
+
+			// 获取回答数
+			answersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(4)))
+			thisQuestion.setAnswersNum(answersNum)
+
+			// 获取关注数
+			followersNum := reMatchInt(strip(sel.Find("div.meta").Contents().Eq(6)))
+			thisQuestion.setFollowersNum(followersNum)
+
+			// 获取浏览量
+			visitTimes, _ := strconv.Atoi(strip(sel.Find("div.zm-profile-vote-num").Text()))
+			thisQuestion.setVisitTimes(visitTimes)
+
+			questions = append(questions, thisQuestion)
 		})
 		page++
 	}
