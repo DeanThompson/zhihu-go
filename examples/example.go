@@ -53,6 +53,14 @@ func showQuestion(question *zhihu.Question) {
 	logger.Info("	followers num: %d", question.GetFollowersNum())
 	logger.Info("	topics: %v", question.GetTopics())
 
+	for i, follower := range question.GetFollowers() {
+		logger.Info("	follower-%d: %s", i+1, follower.String())
+		if i >= 10 {
+			logger.Info("	%d followers not shown.", question.GetFollowersNum()-i-1)
+			break
+		}
+	}
+
 	allAnswers := question.GetAllAnswers()
 	for i, answer := range allAnswers {
 		logger.Info("	answer-%d: %s", i+1, answer.String())

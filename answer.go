@@ -82,7 +82,7 @@ func (a *Answer) GetUpvote() int {
 
 	doc := a.Doc()
 	text := strip(doc.Find("span.count").First().Text())
-	upvote := refineUpvoteNum(text)
+	upvote := upvoteTextToNum(text)
 	a.setField("upvote", upvote)
 	return upvote
 }
@@ -171,7 +171,7 @@ func (a *Answer) setUpvote(value int) {
 	a.setField("upvote", value)
 }
 
-func refineUpvoteNum(text string) int {
+func upvoteTextToNum(text string) int {
 	rv := 0
 	if strings.HasSuffix(text, "K") {
 		num, _ := strconv.Atoi(text[0 : len(text)-1])
@@ -185,6 +185,7 @@ func refineUpvoteNum(text string) int {
 	return rv
 }
 
+// TODO 可以重构一下
 func restructAnswerContent(destDoc *goquery.Document, srcDoc *goquery.Selection) string {
 	// 用于输出的 HTML，只保留页面的 header 部分，把 body 清空
 	destDoc.Find("body").Children().Each(func(_ int, sel *goquery.Selection) {

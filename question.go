@@ -98,9 +98,18 @@ func (q *Question) GetTopics() []string {
 	return topics
 }
 
-// TODO GetFollowers 获取关注该问题的用户
+// GetFollowers 获取关注该问题的用户
 func (q *Question) GetFollowers() []*User {
-	return nil
+	var (
+		link  = urlJoin(q.Link, "/followers")
+		xsrf  = q.GetXsrf()
+		total = q.GetFollowersNum()
+	)
+	users, err := ajaxGetFollowers(link, xsrf, total)
+	if err != nil {
+		return nil
+	}
+	return users
 }
 
 // GetAllAnswers 获取问题的所有答案
@@ -266,7 +275,7 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	} else {
 		voteText = strip(sel.Find("div.zm-votebar").Find("span.count").Text())
 	}
-	answer.setUpvote(refineUpvoteNum(voteText))
+	answer.setUpvote(upvoteTextToNum(voteText))
 
 	// 4. 获取内容
 	content := restructAnswerContent(goquery.CloneDocument(q.Doc()), sel)
