@@ -63,15 +63,7 @@ func (a *Answer) GetAuthor() *User {
 
 	doc := a.Doc()
 	sel := doc.Find("div.zm-item-answer-author-info").First()
-	if strip(sel.Text()) == "匿名用户" {
-		return ANONYMOUS
-	}
-
-	node := sel.Find("a.author-link")
-	userId := strip(node.Text())
-	urlPath, _ := node.Attr("href")
-	userLink := makeZhihuLink(urlPath)
-	return NewUser(userLink, userId)
+	return newUserFromAnswerAuthorTag(sel)
 }
 
 // GetUpvote 返回赞同数
@@ -207,4 +199,16 @@ func restructAnswerContent(destDoc *goquery.Document, srcDoc *goquery.Selection)
 	destDoc.Find("body").AppendSelection(answerSel)
 	content, _ := destDoc.Html()
 	return content
+}
+
+func newUserFromAnswerAuthorTag(sel *goquery.Selection) *User {
+	if strip(sel.Text()) == "匿名用户" {
+		return ANONYMOUS
+	}
+
+	node := sel.Find("a.author-link")
+	userId := strip(node.Text())
+	urlPath, _ := node.Attr("href")
+	userLink := makeZhihuLink(urlPath)
+	return NewUser(userLink, userId)
 }

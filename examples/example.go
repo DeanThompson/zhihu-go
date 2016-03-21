@@ -123,6 +123,10 @@ func showCollection(collection *zhihu.Collection) {
 	for i, question := range collection.GetQuestions() {
 		logger.Info("	question-%d: %s", i+1, question.String())
 	}
+
+	for i, answer := range collection.GetAllAnswers() {
+		logger.Info("	answer-%d: %s", i+1, answer.String())
+	}
 }
 
 func showUser(user *zhihu.User) {

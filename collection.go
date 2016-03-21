@@ -102,18 +102,15 @@ func (c *Collection) GetQuestions() []*Question {
 	// 先获取第一页的问题
 	questions := getQuestionsFromDoc(c.Doc())
 
-	// 根据分页条获取总页数
-	pager := c.Doc().Find("div.zm-invite-pager")
-	if pager.Size() == 0 { // 只有一页
+	totalPages := c.totalPages()
+	if totalPages == 1 {
 		return questions
 	}
-	text := pager.Find("span").Eq(-2).Text()
-	totalPages, _ := strconv.Atoi(text)
 
 	// 再分页查询其他问题
-	page := 2
-	for page <= totalPages {
-		link := fmt.Sprintf("%s?page=%d", c.Link, page)
+	currentPage := 2
+	for currentPage <= totalPages {
+		link := fmt.Sprintf("%s?page=%d", c.Link, currentPage)
 		doc, err := newDocumentFromUrl(link)
 		if err != nil {
 			logger.Error("解析页面失败：%s, %s", link, err.Error())
@@ -122,19 +119,52 @@ func (c *Collection) GetQuestions() []*Question {
 
 		newQuestions := getQuestionsFromDoc(doc)
 		questions = append(questions, newQuestions...)
-		page++
+		currentPage++
 	}
 
 	return questions
 }
 
-// TODO GetAllAnswers 返回收藏夹里所有的回答
+// GetAllAnswers 返回收藏夹里所有的回答
 func (c *Collection) GetAllAnswers() []*Answer {
-	return nil
+	// 先获取第一页的回答
+	answers := getAnswersFromDoc(c.Doc())
+
+	totalPages := c.totalPages()
+	if totalPages == 1 {
+		return answers
+	}
+
+	// 在分页查询
+	currentPage := 2
+	for currentPage <= totalPages {
+		link := fmt.Sprintf("%s?page=%d", c.Link, currentPage)
+		doc, err := newDocumentFromUrl(link)
+		if err != nil {
+			logger.Error("解析页面失败：%s, %s", link, err.Error())
+			return nil
+		}
+
+		newAnswers := getAnswersFromDoc(doc)
+		answers = append(answers, newAnswers...)
+		currentPage++
+	}
+	return answers
 }
 
 func (c *Collection) String() string {
 	return fmt.Sprintf("<Collection: %s - %s>", c.GetName(), c.Link)
+}
+
+func (c *Collection) totalPages() int {
+	pager := c.Doc().Find("div.zm-invite-pager")
+	if pager.Size() == 0 {
+		// 只有一页
+		return 1
+	}
+	text := pager.Find("span").Eq(-2).Text()
+	pages, _ := strconv.Atoi(text)
+	return pages
 }
 
 func ajaxGetFollowers(link string, xsrf string, total int) ([]*User, error) {
@@ -207,4 +237,45 @@ func getQuestionsFromDoc(doc *goquery.Document) []*Question {
 		questions = append(questions, thisQuestion)
 	})
 	return questions
+}
+
+func getAnswersFromDoc(doc *goquery.Document) []*Answer {
+	answers := make([]*Answer, 0)
+	var lastQuestion *Question
+
+	doc.Find("div.zm-item").Each(func(index int, sel *goquery.Selection) {
+		// 回答
+		contentTag := sel.Find("div.zm-item-rich-text")
+		if contentTag.Size() == 0 {
+			// 回答被建议修改
+			reason := strip(sel.Find("div.answer-status").Text())
+			logger.Warn("忽略一个问题，原因：%s", reason)
+			return
+		}
+
+		// 获取问题，如果同一个问题下收藏了多个回答，则除了第一个外，后面的回答的 HTML 部分，
+		// 也就是 div.zm-item 里面不会有该问题的链接（a 标签），所以用 lastQuestion 标记
+		// 最近的一个问题
+		var thisQuestion *Question
+		if qTag := sel.Find("h2.zm-item-title").Find("a"); qTag.Size() > 0 {
+			qTitle := strip(qTag.Text())
+			qHref, _ := qTag.Attr("href")
+			thisQuestion = NewQuestion(makeZhihuLink(qHref), qTitle)
+			lastQuestion = thisQuestion
+		} else {
+			thisQuestion = lastQuestion
+		}
+
+		// 答主
+		author := newUserFromAnswerAuthorTag(sel.Find("div.zm-item-answer-author-info"))
+
+		answerHref, _ := contentTag.Attr("data-entry-url")
+		voteText, _ := sel.Find("a.zm-item-vote-count").Attr("data-votecount")
+		vote, _ := strconv.Atoi(voteText)
+		thisAnswer := NewAnswer(makeZhihuLink(answerHref), thisQuestion, author)
+		thisAnswer.setUpvote(vote)
+
+		answers = append(answers, thisAnswer)
+	})
+	return answers
 }
