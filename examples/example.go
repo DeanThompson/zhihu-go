@@ -119,6 +119,10 @@ func showCollection(collection *zhihu.Collection) {
 	for i, follower := range collection.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
 	}
+
+	for i, question := range collection.GetQuestions() {
+		logger.Info("	question-%d: %s", i+1, question.String())
+	}
 }
 
 func showUser(user *zhihu.User) {

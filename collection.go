@@ -97,18 +97,39 @@ func (c *Collection) GetFollowers() []*User {
 	return users
 }
 
-// TODO GetQuestions 返回收藏夹里所有的问题
+// GetQuestions 返回收藏夹里所有的问题
 func (c *Collection) GetQuestions() []*Question {
-	return nil
+	// 先获取第一页的问题
+	questions := getQuestionsFromDoc(c.Doc())
+
+	// 根据分页条获取总页数
+	pager := c.Doc().Find("div.zm-invite-pager")
+	if pager.Size() == 0 { // 只有一页
+		return questions
+	}
+	text := pager.Find("span").Eq(-2).Text()
+	totalPages, _ := strconv.Atoi(text)
+
+	// 再分页查询其他问题
+	page := 2
+	for page <= totalPages {
+		link := fmt.Sprintf("%s?page=%d", c.Link, page)
+		doc, err := newDocumentFromUrl(link)
+		if err != nil {
+			logger.Error("解析页面失败：%s, %s", link, err.Error())
+			return nil
+		}
+
+		newQuestions := getQuestionsFromDoc(doc)
+		questions = append(questions, newQuestions...)
+		page++
+	}
+
+	return questions
 }
 
 // TODO GetAllAnswers 返回收藏夹里所有的回答
 func (c *Collection) GetAllAnswers() []*Answer {
-	return nil
-}
-
-// TODO GetTopXAnswers 返回收藏夹里前 x 个回答
-func (c *Collection) GetTopXAnswers(x int) []*Answer {
 	return nil
 }
 
@@ -173,4 +194,17 @@ func newDocByNormalAjax(link string, form url.Values) (*goquery.Document, int, e
 	}
 	gotDataNum = int(result.Msg[0].(float64))
 	return doc, gotDataNum, err
+}
+
+func getQuestionsFromDoc(doc *goquery.Document) []*Question {
+	questions := make([]*Question, 0, pageSize)
+	items := doc.Find("div#zh-list-answer-wrap").Find("h2.zm-item-title")
+	items.Each(func(index int, sel *goquery.Selection) {
+		a := sel.Find("a")
+		qTitle := strip(a.Text())
+		qHref, _ := a.Attr("href")
+		thisQuestion := NewQuestion(makeZhihuLink(qHref), qTitle)
+		questions = append(questions, thisQuestion)
+	})
+	return questions
 }
