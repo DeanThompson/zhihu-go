@@ -342,7 +342,7 @@ func (user *User) GetCollections() []*Collection {
 }
 
 // GetFollowedTopics 返回用户关注的话题
-func (user *User) GetFollowedTopics() []string {
+func (user *User) GetFollowedTopics() []*Topic {
 	if user.IsAnonymous() {
 		return nil
 	}
@@ -356,7 +356,7 @@ func (user *User) GetFollowedTopics() []string {
 		link       = urlJoin(user.Link, "/topics")
 		gotDataNum = pageSize
 		offset     = 0
-		topics     = make([]string, 0, total)
+		topics     = make([]*Topic, 0, total)
 	)
 
 	form := url.Values{}
@@ -371,9 +371,10 @@ func (user *User) GetFollowedTopics() []string {
 		}
 
 		doc.Find("div.zm-profile-section-item").Each(func(index int, sel *goquery.Selection) {
-			// TODO 定义 Topic 类，并返回 []*Topic 类型
 			tName := strip(sel.Find("strong").Text())
-			topics = append(topics, tName)
+			tHref, _ := sel.Find("a.zm-list-avatar-link").Attr("href")
+			thisTopic := NewTopic(makeZhihuLink(tHref), tName)
+			topics = append(topics, thisTopic)
 		})
 
 		gotDataNum = dataNum
@@ -640,6 +641,10 @@ func (user *User) setAnswersNum(value int) {
 
 func (user *User) setAgreeNum(value int) {
 	user.setField("agree-num", value)
+}
+
+func (user *User) setBio(value string) {
+	user.setField("bio", value)
 }
 
 func isAnonymous(userId string) bool {

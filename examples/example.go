@@ -42,6 +42,10 @@ func main() {
 	// 黄继新 A4U
 	collection := zhihu.NewCollection("https://www.zhihu.com/collection/19677733", "", nil)
 	showCollection(collection)
+
+	// Python
+	topic := zhihu.NewTopic("https://www.zhihu.com/topic/19552832", "")
+	showTopic(topic)
 }
 
 func showQuestion(question *zhihu.Question) {
@@ -51,7 +55,10 @@ func showQuestion(question *zhihu.Question) {
 	logger.Info("	detail: %s", question.GetDetail())
 	logger.Info("	answers num: %d", question.GetAnswersNum())
 	logger.Info("	followers num: %d", question.GetFollowersNum())
-	logger.Info("	topics: %v", question.GetTopics())
+
+	for i, topic := range question.GetTopics() {
+		logger.Info("	topic-%d: %s", i+1, topic.String())
+	}
 
 	for i, follower := range question.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
@@ -149,7 +156,10 @@ func showUser(user *zhihu.User) {
 	logger.Info("	posts num: %d", user.GetPostsNum())
 	logger.Info("	collections num: %d", user.GetCollectionsNum())
 	logger.Info("	logs num: %d", user.GetLogsNum())
-	logger.Info("	followed topics: %v", user.GetFollowedTopics())
+
+	for i, topic := range user.GetFollowedTopics() {
+		logger.Info("	followed topic-%d: %s", i+1, topic.String())
+	}
 
 	for i, follower := range user.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
@@ -173,6 +183,18 @@ func showUser(user *zhihu.User) {
 
 	for i, like := range user.GetLikes() {
 		logger.Info("	like-%d: %s", i+1, like.String())
+	}
+}
+
+func showTopic(topic *zhihu.Topic) {
+	logger.Info("Topic fields:")
+	logger.Info("	url: %s", topic.Link)
+	logger.Info("	name: %s", topic.GetName())
+	logger.Info("	description: %s", topic.GetDescription())
+	logger.Info("	followers num: %d", topic.GetFollowersNum())
+
+	for i, author := range topic.GetTopAuthors() {
+		logger.Info("	top-%d author: %s", i+1, author.String())
 	}
 }
 

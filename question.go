@@ -84,17 +84,14 @@ func (q *Question) GetFollowersNum() int {
 }
 
 // GetTopics 获取问题的话题列表
-func (q *Question) GetTopics() []string {
-	if got, ok := q.fields["topics"]; ok {
-		return got.([]string)
-	}
-
-	doc := q.Doc()
-	selection := doc.Find("a.zm-item-tag")
-	topics := selection.Map(func(index int, node *goquery.Selection) string {
-		return strip(node.Text())
+func (q *Question) GetTopics() []*Topic {
+	topics := make([]*Topic, 0)
+	q.Doc().Find("a.zm-item-tag").Each(func(index int, sel *goquery.Selection) {
+		name := strip(sel.Text())
+		href, _ := sel.Attr("href")
+		thisTopic := NewTopic(makeZhihuLink(href), name)
+		topics = append(topics, thisTopic)
 	})
-	q.setField("topics", topics)
 	return topics
 }
 
