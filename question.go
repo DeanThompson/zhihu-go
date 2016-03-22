@@ -275,7 +275,7 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	answer.setUpvote(upvoteTextToNum(voteText))
 
 	// 4. 获取内容
-	content := restructAnswerContent(goquery.CloneDocument(q.Doc()), sel)
+	content, _ := answerSelectionToHtml(sel.Find("div.zm-editable-content"))
 	answer.setContent(content)
 
 	return answer

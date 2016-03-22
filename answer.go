@@ -2,6 +2,7 @@ package zhihu
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -89,15 +90,27 @@ func (a *Answer) ToMarkdown() error {
 	return nil
 }
 
+// ToHtml 返回网页源码
+func (a *Answer) ToHtml() string {
+	html, err := a.Doc().Html()
+	if err != nil {
+		logger.Error("输出回答页面源码出错：%s", err.Error())
+	}
+	return html
+}
+
 // GetContent 返回回答的内容
 func (a *Answer) GetContent() string {
 	if got, ok := a.getStringField("content"); ok {
 		return got
 	}
 
-	doc := a.Doc()
-	destDoc := goquery.CloneDocument(doc) // 从原文档 clone 一份，用于输出
-	content := restructAnswerContent(destDoc, doc.Selection)
+	sel := a.Doc().Find("div#zh-question-answer-wrap").Find("div.zm-editable-content")
+	content, err := answerSelectionToHtml(sel)
+	if err != nil {
+		logger.Error("导出 HTML 失败：%s", err.Error())
+		return ""
+	}
 	a.setField("content", content)
 	return content
 }
@@ -177,28 +190,56 @@ func upvoteTextToNum(text string) int {
 	return rv
 }
 
-// TODO 可以重构一下
-func restructAnswerContent(destDoc *goquery.Document, srcDoc *goquery.Selection) string {
-	// 用于输出的 HTML，只保留页面的 header 部分，把 body 清空
-	destDoc.Find("body").Children().Each(func(_ int, sel *goquery.Selection) {
-		sel.Remove()
+// 把一个回答的主体部分导出成 HTML 代码，与原码相比，做了这些操作：
+// 	1. 去掉无用的 noscript 标签
+// 	2. 修复 img 的 src 值
+// 	3. 移除无用的 icon
+// 	4. 如果是自己的回答，移除末尾的 “修改” 链接
+func answerSelectionToHtml(sel *goquery.Selection) (string, error) {
+	sel.RemoveClass()
+
+	sel.Find("noscript").Each(func(_ int, tag *goquery.Selection) {
+		tag.Remove() // 把无用的 noscript 去掉
 	})
 
-	// 获取答案部分的 HTML，并进行清洗和修正
-	answerSel := srcDoc.Find("div.zm-editable-content.clearfix")
-	answerSel.Find("noscript").Each(func(_ int, sel *goquery.Selection) {
-		sel.Remove() // 把无用的 noscript 部分去掉
+	sel.Find("i.icon-external").Each(func(_ int, tag *goquery.Selection) {
+		tag.Remove() // 把无用的 icon 去掉
 	})
 
-	answerSel.Find("img").Each(func(_ int, sel *goquery.Selection) {
-		src, _ := sel.Attr("data-actualsrc")
-		sel.SetAttr("src", src) // 把图片的 src 改为 data-actualsrc 的值
+	sel.Find("a.zu-edit-button").Remove() // 把 “修改” 链接去掉
+
+	// 修复 img 的 src
+	sel.Find("img").Each(func(_ int, tag *goquery.Selection) {
+		var src string
+		if tag.HasClass("origin_image") {
+			src, _ = tag.Attr("data-original")
+		} else {
+			src, _ = tag.Attr("data-actualsrc")
+		}
+		tag.SetAttr("src", src)
+		if tag.Next().Size() == 0 {
+			tag.AfterHtml("<br>")
+		}
 	})
 
-	// body 只保留答案内容部分
-	destDoc.Find("body").AppendSelection(answerSel)
-	content, _ := destDoc.Html()
-	return content
+	// 修复 a 标签的 href，因为知乎的外链都是这种形式：https://link.zhihu.com/?target=xxx
+	sel.Find("a").Each(func(_ int, tag *goquery.Selection) {
+		href, _ := tag.Attr("href")
+		if strings.Contains(href, "target=") {
+			link, err := url.Parse(href)
+			if err != nil {
+				return
+			}
+			target := link.Query().Get("target")
+			tag.SetAttr("href", target)
+		}
+	})
+
+	wrapper := `<html><head><meta charset="utf-8"></head><body></body></html>`
+	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(wrapper))
+	doc.Find("body").AppendSelection(sel)
+
+	return doc.Html()
 }
 
 func newUserFromAnswerAuthorTag(sel *goquery.Selection) *User {

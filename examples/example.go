@@ -71,8 +71,8 @@ func showQuestion(question *zhihu.Question) {
 	allAnswers := question.GetAllAnswers()
 	for i, answer := range allAnswers {
 		logger.Info("	answer-%d: %s", i+1, answer.String())
-		// filename := fmt.Sprintf("/tmp/%s-%s的回答.html", question.GetTitle(), answer.GetAuthor().GetUserID())
-		// dumpAnswerHTML(filename, answer)
+		filename := fmt.Sprintf("/tmp/%s-%s的回答.html", question.GetTitle(), answer.GetAuthor().GetUserID())
+		dumpAnswerHTML(filename, answer)
 		if i >= 10 {
 			logger.Info("	%d answers not shown.", len(allAnswers)-i-1)
 			break
