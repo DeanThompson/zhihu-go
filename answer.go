@@ -115,8 +115,12 @@ func (a *Answer) GetContent() string {
 	return content
 }
 
-// GetVoters 返回点赞的用户
-func (a *Answer) GetVoters() []*User {
+// GetVotersN 返回 n 个点赞的用户，如果 n < 0，返回所有点赞的用户
+func (a *Answer) GetVotersN(n int) []*User {
+	if n == 0 {
+		return nil
+	}
+
 	querystring := fmt.Sprintf(`params={"answer_id":"%d"}`, a.GetID())
 	url := makeZhihuLink("/node/AnswerFullVoteInfoV2" + "?" + querystring)
 	doc, err := newDocumentFromUrl(url)
@@ -125,8 +129,13 @@ func (a *Answer) GetVoters() []*User {
 	}
 
 	sel := doc.Find(".voters span")
-	voters := make([]*User, 0, sel.Length())
-	sel.Each(func(index int, span *goquery.Selection) {
+	capacity := n
+	if capacity < 0 || capacity > sel.Length() {
+		capacity = sel.Length()
+	}
+	voters := make([]*User, 0, capacity)
+
+	sel.EachWithBreak(func(index int, span *goquery.Selection) bool {
 		userId := strings.Trim(strip(span.Text()), "、")
 		var userLink string
 		if !(userId == "匿名用户" || userId == "知乎用户") {
@@ -134,9 +143,18 @@ func (a *Answer) GetVoters() []*User {
 			userLink = makeZhihuLink(path)
 		}
 		voters = append(voters, NewUser(userLink, userId))
+		if n > 0 && len(voters) == n {
+			return false
+		}
+		return true
 	})
 
 	return voters
+}
+
+// GetVoters 返回点赞的用户
+func (a *Answer) GetVoters() []*User {
+	return a.GetVotersN(-1)
 }
 
 // GetVisitTimes 返回所属问题被浏览次数

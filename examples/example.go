@@ -60,6 +60,10 @@ func showQuestion(question *zhihu.Question) {
 		logger.Info("	topic-%d: %s", i+1, topic.String())
 	}
 
+	for i, follower := range question.GetFollowersN(5) {
+		logger.Info("	top follower-%d: %s", i+1, follower.String())
+	}
+
 	for i, follower := range question.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
 		if i >= 10 {
@@ -106,10 +110,11 @@ func showAnswer(answer *zhihu.Answer) {
 	filename := fmt.Sprintf("/tmp/answer_%d.html", answer.GetID())
 	dumpAnswerHTML(filename, answer)
 
-	for i, voter := range answer.GetVoters() {
+	voters := answer.GetVoters()
+	for i, voter := range voters {
 		logger.Info("	voter-%d: %s", i+1, voter.String())
 		if i >= 10 {
-			remain := len(answer.GetVoters()) - i - 1
+			remain := len(voters) - i - 1
 			logger.Info("	%d votes not shown.", remain)
 			break
 		}
@@ -123,15 +128,27 @@ func showCollection(collection *zhihu.Collection) {
 	logger.Info("	creator: %s", collection.GetCreator().String())
 	logger.Info("	followers num: %d", collection.GetFollowersNum())
 
+	for i, follower := range collection.GetFollowersN(5) {
+		logger.Info("	top follower-%d: %s", i+1, follower.String())
+	}
+
 	for i, follower := range collection.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
+	}
+
+	for i, question := range collection.GetQuestionsN(5) {
+		logger.Info("	top question-%d: %s", i+1, question.String())
 	}
 
 	for i, question := range collection.GetQuestions() {
 		logger.Info("	question-%d: %s", i+1, question.String())
 	}
 
-	for i, answer := range collection.GetAllAnswers() {
+	for i, answer := range collection.GetAnswersN(5) {
+		logger.Info("	top answer-%d: %s", i+1, answer.String())
+	}
+
+	for i, answer := range collection.GetAnswers() {
 		logger.Info("	answer-%d: %s", i+1, answer.String())
 	}
 }
@@ -157,24 +174,48 @@ func showUser(user *zhihu.User) {
 	logger.Info("	collections num: %d", user.GetCollectionsNum())
 	logger.Info("	logs num: %d", user.GetLogsNum())
 
+	for i, topic := range user.GetFollowedTopicsN(5) {
+		logger.Info("	top followed topic-%d: %s", i+1, topic.String())
+	}
+
 	for i, topic := range user.GetFollowedTopics() {
 		logger.Info("	followed topic-%d: %s", i+1, topic.String())
+	}
+
+	for i, follower := range user.GetFollowersN(5) {
+		logger.Info("	top follower-%d: %s", i+1, follower.String())
 	}
 
 	for i, follower := range user.GetFollowers() {
 		logger.Info("	follower-%d: %s", i+1, follower.String())
 	}
 
+	for i, followee := range user.GetFolloweesN(5) {
+		logger.Info("	top followee-%d: %s", i+1, followee.String())
+	}
+
 	for i, followee := range user.GetFollowees() {
 		logger.Info("	followee-%d: %s", i+1, followee.String())
+	}
+
+	for i, ask := range user.GetAsksN(5) {
+		logger.Info("	top ask-%d: %s", i+1, ask.String())
 	}
 
 	for i, ask := range user.GetAsks() {
 		logger.Info("	ask-%d: %s", i+1, ask.String())
 	}
 
+	for i, answer := range user.GetAnswersN(5) {
+		logger.Info("	top answer-%d: %s", i+1, answer.String())
+	}
+
 	for i, answer := range user.GetAnswers() {
 		logger.Info("	answer-%d: %s", i+1, answer.String())
+	}
+
+	for i, collection := range user.GetCollectionsN(5) {
+		logger.Info("	top collection-%d: %s", i+1, collection.String())
 	}
 
 	for i, collection := range user.GetCollections() {

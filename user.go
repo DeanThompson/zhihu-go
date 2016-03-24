@@ -200,9 +200,9 @@ func (user *User) GetLogsNum() int {
 	return user.getProfileNum("logs-num")
 }
 
-// GetFollowees 返回用户关注的人
-func (user *User) GetFollowees() []*User {
-	users, err := user.getFolloweesOrFollowers("followees")
+// GetFolloweesN 返回前 n 个用户关注的人，如果 n < 0，返回所有关注的人
+func (user *User) GetFolloweesN(n int) []*User {
+	users, err := user.getFolloweesOrFollowers("followees", n)
 	if err != nil {
 		logger.Error("获取 %s 关注的人失败：%s", user.String(), err.Error())
 		return nil
@@ -210,30 +210,44 @@ func (user *User) GetFollowees() []*User {
 	return users
 }
 
-// GetFollowers 返回用户的粉丝列表
-func (user *User) GetFollowers() []*User {
-	users, err := user.getFolloweesOrFollowers("followers")
+// GetFollowees 返回用户关注的人
+func (user *User) GetFollowees() []*User {
+	return user.GetFolloweesN(-1)
+}
+
+// GetFollowersN 返回前 n 个粉丝，如果 n < 0，返回所有粉丝
+func (user *User) GetFollowersN(n int) []*User {
+	users, err := user.getFolloweesOrFollowers("followers", n)
 	if err != nil {
 		logger.Error("获取 %s 的粉丝失败：%s", user.String(), err.Error())
 		return nil
 	}
 	return users
+
 }
 
-// GetAsks 返回用户提过的问题
-func (user *User) GetAsks() []*Question {
+// GetFollowers 返回用户的粉丝列表
+func (user *User) GetFollowers() []*User {
+	return user.GetFollowersN(-1)
+}
+
+// GetAsksN 返回用户前 n 个提问，如果 n < 0, 返回所有提问
+func (user *User) GetAsksN(n int) []*Question {
 	if user.IsAnonymous() {
 		return nil
 	}
 
 	total := user.GetAsksNum()
-	if total == 0 {
+	if n < 0 || n > total {
+		n = total
+	}
+	if n == 0 {
 		return nil
 	}
 
 	page := 1
-	questions := make([]*Question, 0, total)
-	for page < ((total-1)/pageSize + 2) {
+	questions := make([]*Question, 0, n)
+	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/asks?page=%d", page))
 		doc, err := newDocumentFromUrl(link)
 		if err != nil {
@@ -261,25 +275,38 @@ func (user *User) GetAsks() []*Question {
 
 			questions = append(questions, thisQuestion)
 		})
+
+		if n > 0 && len(questions) >= n {
+			return questions[:n]
+		}
+
 		page++
 	}
 	return questions
 }
 
-// GetAnswers 返回用户所有的回答
-func (user *User) GetAnswers() []*Answer {
+// GetAsks 返回用户所有的提问
+func (user *User) GetAsks() []*Question {
+	return user.GetAsksN(-1)
+}
+
+// GetAnswersN 返回用户前 n 个回答，如果 n < 0，返回所有回答
+func (user *User) GetAnswersN(n int) []*Answer {
 	if user.IsAnonymous() {
 		return nil
 	}
 
 	total := user.GetAnswersNum()
-	if total == 0 {
+	if n < 0 || n > total {
+		n = total
+	}
+	if n == 0 {
 		return nil
 	}
 
 	page := 1
-	answers := make([]*Answer, 0, total)
-	for page < ((total-1)/pageSize + 2) {
+	answers := make([]*Answer, 0, n)
+	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/answers?page=%d", page))
 		doc, err := newDocumentFromUrl(link)
 		if err != nil {
@@ -300,26 +327,39 @@ func (user *User) GetAnswers() []*Answer {
 
 			answers = append(answers, thisAnswer)
 		})
+
+		if n > 0 && len(answers) >= n {
+			return answers[:n]
+		}
+
 		page++
 	}
 
 	return answers
 }
 
-// GetCollections 返回用户的收藏夹
-func (user *User) GetCollections() []*Collection {
+// GetAnswers 返回用户所有的回答
+func (user *User) GetAnswers() []*Answer {
+	return user.GetAnswersN(-1)
+}
+
+// GetCollections 返回用户前 n 个收藏夹，如果 n < 0，返回所有收藏夹
+func (user *User) GetCollectionsN(n int) []*Collection {
 	if user.IsAnonymous() {
 		return nil
 	}
 
 	total := user.GetCollectionsNum()
-	if total == 0 {
+	if n < 0 || n > total {
+		n = total
+	}
+	if n == 0 {
 		return nil
 	}
 
 	page := 1
-	collections := make([]*Collection, 0, total)
-	for page < ((total-1)/pageSize + 2) {
+	collections := make([]*Collection, 0, n)
+	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/collections?page=%d", page))
 		doc, err := newDocumentFromUrl(link)
 		if err != nil {
@@ -335,20 +375,32 @@ func (user *User) GetCollections() []*Collection {
 			collections = append(collections, thisCollection)
 		})
 
+		if n > 0 && len(collections) >= n {
+			return collections[:n]
+		}
+
 		page++
 	}
 
 	return collections
 }
 
-// GetFollowedTopics 返回用户关注的话题
-func (user *User) GetFollowedTopics() []*Topic {
+// GetCollections 返回用户的收藏夹
+func (user *User) GetCollections() []*Collection {
+	return user.GetCollectionsN(-1)
+}
+
+// GetFollowedTopics 返回用户前 n 个关注的话题，如果 n < 0，返回所有话题
+func (user *User) GetFollowedTopicsN(n int) []*Topic {
 	if user.IsAnonymous() {
 		return nil
 	}
 
 	total := user.GetFollowedTopicsNum()
-	if total == 0 {
+	if n < 0 || n > total {
+		n = total
+	}
+	if n == 0 {
 		return nil
 	}
 
@@ -356,7 +408,7 @@ func (user *User) GetFollowedTopics() []*Topic {
 		link       = urlJoin(user.Link, "/topics")
 		gotDataNum = pageSize
 		offset     = 0
-		topics     = make([]*Topic, 0, total)
+		topics     = make([]*Topic, 0, n)
 	)
 
 	form := url.Values{}
@@ -377,11 +429,20 @@ func (user *User) GetFollowedTopics() []*Topic {
 			topics = append(topics, thisTopic)
 		})
 
+		if n > 0 && len(topics) >= n {
+			return topics[:n]
+		}
+
 		gotDataNum = dataNum
 		offset += gotDataNum
 	}
 
 	return topics
+}
+
+// GetFollowedTopics 返回用户关注的话题
+func (user *User) GetFollowedTopics() []*Topic {
+	return user.GetFollowedTopicsN(-1)
 }
 
 // TODO GetLikes 返回用户赞过的回答
@@ -568,8 +629,12 @@ func (user *User) getProfileNum(cacheKey string) int {
 	return num
 }
 
-func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
+func (user *User) getFolloweesOrFollowers(eeOrEr string, limit int) ([]*User, error) {
 	if user.IsAnonymous() {
+		return nil, nil
+	}
+
+	if limit == 0 {
 		return nil, nil
 	}
 
@@ -589,11 +654,15 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
 		totalNum = user.GetFolloweesNum()
 	}
 
+	if limit < 0 || limit > totalNum {
+		limit = totalNum
+	}
+
 	form := url.Values{}
 	form.Set("_xsrf", user.GetXsrf())
 	form.Set("method", "next")
 
-	users := make([]*User, 0, totalNum)
+	users := make([]*User, 0, limit)
 	for {
 		form.Set("params", fmt.Sprintf(`{"offset":%d,"order_by":"created","hash_id":"%s"}`, offset, hashId))
 		body := strings.NewReader(form.Encode())
@@ -616,9 +685,13 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string) ([]*User, error) {
 				return nil, err
 			}
 			users = append(users, thisUser)
+			if len(users) == limit {
+				break
+			}
 		}
 
-		if len(result.Msg) < pageSize {
+		// 已经获取了需要的数量，或者数量不够，但是已经到了最后一页
+		if len(users) == limit || len(result.Msg) < pageSize {
 			break
 		} else {
 			offset += pageSize

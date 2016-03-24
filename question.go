@@ -95,18 +95,22 @@ func (q *Question) GetTopics() []*Topic {
 	return topics
 }
 
-// GetFollowers 获取关注该问题的用户
-func (q *Question) GetFollowers() []*User {
+// GetFollowersN 返回 n 个关注者，如果 n < 0，返回所有关注者
+func (q *Question) GetFollowersN(n int) []*User {
 	var (
-		link  = urlJoin(q.Link, "/followers")
-		xsrf  = q.GetXsrf()
-		total = q.GetFollowersNum()
+		link = urlJoin(q.Link, "/followers")
+		xsrf = q.GetXsrf()
 	)
-	users, err := ajaxGetFollowers(link, xsrf, total)
+	users, err := ajaxGetFollowers(link, xsrf, n)
 	if err != nil {
 		return nil
 	}
 	return users
+}
+
+// GetFollowers 获取关注该问题的用户
+func (q *Question) GetFollowers() []*User {
+	return q.GetFollowersN(q.GetFollowersNum())
 }
 
 // GetAllAnswers 获取问题的所有答案
@@ -116,7 +120,7 @@ func (q *Question) GetAllAnswers() []*Answer {
 
 // GetTopXAnswer 获取问题 Top X 的答案
 func (q *Question) GetTopXAnswers(x int) []*Answer {
-	if x > q.GetAnswersNum() {
+	if x < 0 || x > q.GetAnswersNum() {
 		x = q.GetAnswersNum()
 	}
 

@@ -83,28 +83,39 @@ func (c *Collection) GetFollowersNum() int {
 	return num
 }
 
-// GetFollowers 返回关注该收藏夹的用户
-func (c *Collection) GetFollowers() []*User {
+// GetFollowersN 返回 n 个关注该收藏夹的用户，如果 n < 0，返回所有关注者
+func (c *Collection) GetFollowersN(n int) []*User {
 	var (
-		link  = urlJoin(c.Link, "/followers")
-		xsrf  = c.GetXsrf()
-		total = c.GetFollowersNum()
+		link = urlJoin(c.Link, "/followers")
+		xsrf = c.GetXsrf()
 	)
-	users, err := ajaxGetFollowers(link, xsrf, total)
+	users, err := ajaxGetFollowers(link, xsrf, n)
 	if err != nil {
 		return nil
 	}
 	return users
 }
 
-// GetQuestions 返回收藏夹里所有的问题
-func (c *Collection) GetQuestions() []*Question {
+// GetFollowers 返回关注该收藏夹的用户
+func (c *Collection) GetFollowers() []*User {
+	return c.GetFollowersN(c.GetFollowersNum())
+}
+
+// GetQuestionsN 返回前 n 个问题，如果 n < 0，返回所有问题
+func (c *Collection) GetQuestionsN(n int) []*Question {
+	if n == 0 {
+		return nil
+	}
+
 	// 先获取第一页的问题
 	questions := getQuestionsFromDoc(c.Doc())
 
 	totalPages := c.totalPages()
 	if totalPages == 1 {
-		return questions
+		if n < 0 || n > len(questions) {
+			return questions
+		}
+		return questions[0:n]
 	}
 
 	// 再分页查询其他问题
@@ -119,20 +130,35 @@ func (c *Collection) GetQuestions() []*Question {
 
 		newQuestions := getQuestionsFromDoc(doc)
 		questions = append(questions, newQuestions...)
+		if n > 0 && len(questions) >= n {
+			return questions[0:n]
+		}
 		currentPage++
 	}
 
 	return questions
 }
 
-// GetAllAnswers 返回收藏夹里所有的回答
-func (c *Collection) GetAllAnswers() []*Answer {
+// GetQuestions 返回收藏夹里所有的问题
+func (c *Collection) GetQuestions() []*Question {
+	return c.GetQuestionsN(-1)
+}
+
+// GetAnswersN 返回 n 个回答，如果 n < 0，返回所有回答
+func (c *Collection) GetAnswersN(n int) []*Answer {
+	if n == 0 {
+		return nil
+	}
+
 	// 先获取第一页的回答
 	answers := getAnswersFromDoc(c.Doc())
 
 	totalPages := c.totalPages()
 	if totalPages == 1 {
-		return answers
+		if n < 0 || n > len(answers) {
+			return answers
+		}
+		return answers[0:n]
 	}
 
 	// 在分页查询
@@ -147,9 +173,17 @@ func (c *Collection) GetAllAnswers() []*Answer {
 
 		newAnswers := getAnswersFromDoc(doc)
 		answers = append(answers, newAnswers...)
+		if n > 0 && len(answers) >= n {
+			return answers[0:n]
+		}
 		currentPage++
 	}
 	return answers
+}
+
+// GetAllAnswers 返回收藏夹里所有的回答
+func (c *Collection) GetAnswers() []*Answer {
+	return c.GetAnswersN(-1)
 }
 
 func (c *Collection) String() string {
@@ -168,15 +202,20 @@ func (c *Collection) totalPages() int {
 }
 
 func ajaxGetFollowers(link string, xsrf string, total int) ([]*User, error) {
-	if total < 0 {
-		total = 0
+	if total == 0 {
+		return nil, nil
 	}
 
 	var (
 		offset     = 0
 		gotDataNum = pageSize
-		users      = make([]*User, 0, total)
+		initCap    = total
 	)
+
+	if initCap < 0 {
+		initCap = pageSize
+	}
+	users := make([]*User, 0, initCap)
 
 	form := url.Values{}
 	form.Set("_xsrf", xsrf)
@@ -192,6 +231,10 @@ func ajaxGetFollowers(link string, xsrf string, total int) ([]*User, error) {
 			thisUser := newUserFromSelector(sel)
 			users = append(users, thisUser)
 		})
+
+		if total > 0 && len(users) >= total {
+			return users[:total], nil
+		}
 
 		gotDataNum = dataNum
 		offset += gotDataNum
