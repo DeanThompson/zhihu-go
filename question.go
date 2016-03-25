@@ -13,7 +13,7 @@ import (
 
 // Question 表示一个知乎问题，可以用于获取其标题、详情、答案等信息
 type Question struct {
-	*ZhihuPage
+	*Page
 
 	// title 是该问题的标题
 	title string
@@ -26,8 +26,8 @@ func NewQuestion(link string, title string) *Question {
 	}
 
 	return &Question{
-		ZhihuPage: newZhihuPage(link),
-		title:     title,
+		Page:  newZhihuPage(link),
+		title: title,
 	}
 }
 
@@ -54,7 +54,7 @@ func (q *Question) GetDetail() string {
 	return detail
 }
 
-// GetAnswerNum 获取问题回答数量
+// GetAnswersNum 获取问题回答数量
 func (q *Question) GetAnswersNum() int {
 	if got, ok := q.getIntField("answers-num"); ok {
 		return got
@@ -85,7 +85,7 @@ func (q *Question) GetFollowersNum() int {
 
 // GetTopics 获取问题的话题列表
 func (q *Question) GetTopics() []*Topic {
-	topics := make([]*Topic, 0)
+	var topics []*Topic
 	q.Doc().Find("a.zm-item-tag").Each(func(index int, sel *goquery.Selection) {
 		name := strip(sel.Text())
 		href, _ := sel.Attr("href")
@@ -99,7 +99,7 @@ func (q *Question) GetTopics() []*Topic {
 func (q *Question) GetFollowersN(n int) []*User {
 	var (
 		link = urlJoin(q.Link, "/followers")
-		xsrf = q.GetXsrf()
+		xsrf = q.GetXSRF()
 	)
 	users, err := ajaxGetFollowers(link, xsrf, n)
 	if err != nil {
@@ -118,7 +118,7 @@ func (q *Question) GetAllAnswers() []*Answer {
 	return q.GetTopXAnswers(q.GetAnswersNum())
 }
 
-// GetTopXAnswer 获取问题 Top X 的答案
+// GetTopXAnswers 获取问题 Top X 的答案
 func (q *Question) GetTopXAnswers(x int) []*Answer {
 	if x < 0 || x > q.GetAnswersNum() {
 		x = q.GetAnswersNum()
@@ -193,7 +193,7 @@ func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 	urlToken, _ := strconv.Atoi(q.Link[len(q.Link)-8 : len(q.Link)])
 
 	form := url.Values{}
-	form.Set("_xsrf", q.GetXsrf())
+	form.Set("_xsrf", q.GetXSRF())
 	form.Set("method", "next")
 	form.Set("params", fmt.Sprintf(`{"url_token":%d,"pagesize":%d,"offset":%d}`, urlToken, pageSize, offset))
 
@@ -258,9 +258,9 @@ func (q *Question) processSingleAnswer(sel *goquery.Selection) *Answer {
 	} else {
 		// 具名用户
 		x := authorSel.Find("a.author-link")
-		userId := strip(x.Text())
+		userID := strip(x.Text())
 		userHref, _ := x.Attr("href")
-		author = NewUser(makeZhihuLink(userHref), userId)
+		author = NewUser(makeZhihuLink(userHref), userID)
 	}
 
 	answer := NewAnswer(answerLink, q, author)

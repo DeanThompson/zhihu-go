@@ -8,7 +8,7 @@ import (
 )
 
 type Topic struct {
-	*ZhihuPage
+	*Page
 
 	// name 是改话题的名称
 	name string
@@ -19,8 +19,8 @@ func NewTopic(link string, name string) *Topic {
 		panic("非法的 Topic 链接：%s" + link)
 	}
 	return &Topic{
-		ZhihuPage: newZhihuPage(link),
-		name:      name,
+		Page: newZhihuPage(link),
+		name: name,
 	}
 }
 
@@ -74,8 +74,9 @@ func (t *Topic) GetTopAuthors() []*User {
 	authors := make([]*User, 0, 5)
 	div := t.Doc().Find("div#zh-topic-top-answerer")
 	div.Find("div.zm-topic-side-person-item-content").Each(func(index int, sel *goquery.Selection) {
-		uHref, _ := sel.Find("a").Attr("href")
-		uId := strip(sel.Find("a").Text())
+		tag := sel.Find("a").First()
+		uHref, _ := tag.Attr("href")
+		uId := strip(tag.Text())
 
 		thisAuthor := NewUser(makeZhihuLink(uHref), uId)
 

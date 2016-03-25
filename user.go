@@ -16,30 +16,30 @@ var (
 
 // User 表示一个知乎用户
 type User struct {
-	*ZhihuPage
+	*Page
 
 	// userId 表示用户的知乎 ID（用户名）
-	userId string
+	userID string
 }
 
 // NewUser 创建一个用户对象。
 // link 为空的时候表示匿名用户，此时 userId 仅允许 "匿名用户" 或 "知乎用户"；
 // userId 可以为空，这种情况下调用 GetUserID 会去解析用户主页
-func NewUser(link string, userId string) *User {
-	if link == "" && !isAnonymous(userId) {
+func NewUser(link string, userID string) *User {
+	if link == "" && !isAnonymous(userID) {
 		panic("调用 NewUser 的参数不合法")
 	}
 
 	return &User{
-		ZhihuPage: newZhihuPage(link),
-		userId:    userId,
+		Page:   newZhihuPage(link),
+		userID: userID,
 	}
 }
 
 // GetUserID 返回用户的知乎 ID
 func (user *User) GetUserID() string {
-	if user.userId != "" {
-		return user.userId
+	if user.userID != "" {
+		return user.userID
 	}
 
 	doc := user.Doc()
@@ -48,8 +48,8 @@ func (user *User) GetUserID() string {
 	//   <span class="name">黄继新</span>，
 	//   <span class="bio" title="和知乎在一起">和知乎在一起</span>
 	// </div>
-	user.userId = strip(doc.Find("div.title-section.ellipsis").Find("span.name").Text())
-	return user.userId
+	user.userID = strip(doc.Find("div.title-section.ellipsis").Find("span.name").Text())
+	return user.userID
 }
 
 // GetDataID 返回用户的 data-id
@@ -72,20 +72,20 @@ func (user *User) GetDataID() string {
 	//
 	// 2. 自己
 	// <input type="hidden" name="dest_id" value="2f5c3f612108780e7d5400d8f74ab449">
-	var dataId string
+	var dataID string
 	btns := doc.Find("div.zm-profile-header-op-btns")
 	if btns.Size() > 0 {
 		// 1. 其他用户
-		dataId, _ = btns.Find("button").Attr("data-id")
+		dataID, _ = btns.Find("button").Attr("data-id")
 	} else {
 		// 2. 自己
 		script := doc.Find(`script[data-name="ga_vars"]`).Text()
 		data := make(map[string]interface{})
 		json.Unmarshal([]byte(script), &data)
-		dataId = data["user_hash"].(string)
+		dataID = data["user_hash"].(string)
 	}
-	user.setField("data-id", dataId)
-	return dataId
+	user.setField("data-id", dataID)
+	return dataID
 }
 
 // GetBio 返回用户的 BIO
@@ -249,7 +249,7 @@ func (user *User) GetAsksN(n int) []*Question {
 	questions := make([]*Question, 0, n)
 	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/asks?page=%d", page))
-		doc, err := newDocumentFromUrl(link)
+		doc, err := newDocumentFromURL(link)
 		if err != nil {
 			return nil
 		}
@@ -308,7 +308,7 @@ func (user *User) GetAnswersN(n int) []*Answer {
 	answers := make([]*Answer, 0, n)
 	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/answers?page=%d", page))
-		doc, err := newDocumentFromUrl(link)
+		doc, err := newDocumentFromURL(link)
 		if err != nil {
 			return nil
 		}
@@ -343,7 +343,7 @@ func (user *User) GetAnswers() []*Answer {
 	return user.GetAnswersN(-1)
 }
 
-// GetCollections 返回用户前 n 个收藏夹，如果 n < 0，返回所有收藏夹
+// GetCollectionsN 返回用户前 n 个收藏夹，如果 n < 0，返回所有收藏夹
 func (user *User) GetCollectionsN(n int) []*Collection {
 	if user.IsAnonymous() {
 		return nil
@@ -361,7 +361,7 @@ func (user *User) GetCollectionsN(n int) []*Collection {
 	collections := make([]*Collection, 0, n)
 	for page < ((n-1)/pageSize + 2) {
 		link := urlJoin(user.Link, fmt.Sprintf("/collections?page=%d", page))
-		doc, err := newDocumentFromUrl(link)
+		doc, err := newDocumentFromURL(link)
 		if err != nil {
 			return nil
 		}
@@ -390,7 +390,7 @@ func (user *User) GetCollections() []*Collection {
 	return user.GetCollectionsN(-1)
 }
 
-// GetFollowedTopics 返回用户前 n 个关注的话题，如果 n < 0，返回所有话题
+// GetFollowedTopicsN 返回用户前 n 个关注的话题，如果 n < 0，返回所有话题
 func (user *User) GetFollowedTopicsN(n int) []*Topic {
 	if user.IsAnonymous() {
 		return nil
@@ -412,7 +412,7 @@ func (user *User) GetFollowedTopicsN(n int) []*Topic {
 	)
 
 	form := url.Values{}
-	form.Set("_xsrf", user.GetXsrf())
+	form.Set("_xsrf", user.GetXSRF())
 	form.Set("start", "0")
 
 	for gotDataNum == pageSize {
@@ -445,12 +445,12 @@ func (user *User) GetFollowedTopics() []*Topic {
 	return user.GetFollowedTopicsN(-1)
 }
 
-// TODO GetLikes 返回用户赞过的回答
+// GetLikes 返回用户赞过的回答
 func (user *User) GetLikes() []*Answer {
 	if user.IsAnonymous() {
 		return nil
 	}
-
+	// TODO
 	return nil
 }
 
@@ -461,14 +461,14 @@ func (user *User) GetVotedAnswers() []*Answer {
 
 // IsAnonymous 表示该用户是否匿名用户
 func (user *User) IsAnonymous() bool {
-	return isAnonymous(user.userId)
+	return isAnonymous(user.userID)
 }
 
 func (user *User) String() string {
 	if user.IsAnonymous() {
-		return fmt.Sprintf("<User: %s>", user.userId)
+		return fmt.Sprintf("<User: %s>", user.userID)
 	}
-	return fmt.Sprintf("<User: %s - %s>", user.userId, user.Link)
+	return fmt.Sprintf("<User: %s - %s>", user.userID, user.Link)
 }
 
 func (user *User) getProfile(cacheKey string) string {
@@ -639,18 +639,18 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string, limit int) ([]*User, er
 	}
 
 	var (
-		referer, ajaxUrl string
+		referer, ajaxURL string
 		offset, totalNum int
-		hashId           = user.GetDataID()
+		hashID           = user.GetDataID()
 	)
 
 	if eeOrEr == "followees" {
 		referer = urlJoin(user.Link, "/followees")
-		ajaxUrl = makeZhihuLink("/node/ProfileFolloweesListV2")
+		ajaxURL = makeZhihuLink("/node/ProfileFolloweesListV2")
 		totalNum = user.GetFollowersNum()
 	} else {
 		referer = urlJoin(user.Link, "/followers")
-		ajaxUrl = makeZhihuLink("/node/ProfileFollowersListV2")
+		ajaxURL = makeZhihuLink("/node/ProfileFollowersListV2")
 		totalNum = user.GetFolloweesNum()
 	}
 
@@ -659,14 +659,14 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string, limit int) ([]*User, er
 	}
 
 	form := url.Values{}
-	form.Set("_xsrf", user.GetXsrf())
+	form.Set("_xsrf", user.GetXSRF())
 	form.Set("method", "next")
 
 	users := make([]*User, 0, limit)
 	for {
-		form.Set("params", fmt.Sprintf(`{"offset":%d,"order_by":"created","hash_id":"%s"}`, offset, hashId))
+		form.Set("params", fmt.Sprintf(`{"offset":%d,"order_by":"created","hash_id":"%s"}`, offset, hashID))
 		body := strings.NewReader(form.Encode())
-		resp, err := gSession.Ajax(ajaxUrl, body, referer)
+		resp, err := gSession.Ajax(ajaxURL, body, referer)
 		if err != nil {
 			return nil, err
 		}
@@ -679,8 +679,8 @@ func (user *User) getFolloweesOrFollowers(eeOrEr string, limit int) ([]*User, er
 			return nil, err
 		}
 
-		for _, userHtml := range result.Msg {
-			thisUser, err := newUserFromHTML(userHtml)
+		for _, userHTML := range result.Msg {
+			thisUser, err := newUserFromHTML(userHTML)
 			if err != nil {
 				return nil, err
 			}
@@ -720,8 +720,8 @@ func (user *User) setBio(value string) {
 	user.setField("bio", value)
 }
 
-func isAnonymous(userId string) bool {
-	return userId == "匿名用户" || userId == "知乎用户"
+func isAnonymous(userID string) bool {
+	return userID == "匿名用户" || userID == "知乎用户"
 }
 
 func newUserFromHTML(html string) (*User, error) {

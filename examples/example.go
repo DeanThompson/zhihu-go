@@ -14,8 +14,8 @@ var (
 func main() {
 	zhihu.Init("./config.json")
 
-	// 钟宇腾，Bug Creator
-	user := zhihu.NewUser("https://www.zhihu.com/people/zonyitoo", "")
+	// 黄继新，和知乎在一起
+	user := zhihu.NewUser("https://www.zhihu.com/people/jixin", "")
 	showUser(user)
 
 	logger.Success("========== split ==========")
@@ -102,7 +102,6 @@ func showAnswer(answer *zhihu.Answer) {
 
 	logger.Info("	author: %s", answer.GetAuthor().String())
 	logger.Info("	upvote num: %d", answer.GetUpvote())
-	logger.Info("	visit times: %d", answer.GetVisitTimes())
 	logger.Info("	comments num: %d", answer.GetCommentsNum())
 	logger.Info("	data ID: %d", answer.GetID())
 
@@ -161,6 +160,7 @@ func showUser(user *zhihu.User) {
 	logger.Info("	bio: %s", user.GetBio())
 	logger.Info("	location: %s", user.GetLocation())
 	logger.Info("	business: %s", user.GetBusiness())
+	logger.Info("	education: %s", user.GetEducation())
 	logger.Info("	gender: %s", user.GetGender())
 	logger.Info("	followers num: %d", user.GetFollowersNum())
 	logger.Info("	followees num: %d", user.GetFolloweesNum())
@@ -178,49 +178,49 @@ func showUser(user *zhihu.User) {
 		logger.Info("	top followed topic-%d: %s", i+1, topic.String())
 	}
 
-	for i, topic := range user.GetFollowedTopics() {
-		logger.Info("	followed topic-%d: %s", i+1, topic.String())
-	}
+	//	for i, topic := range user.GetFollowedTopics() {
+	//		logger.Info("	followed topic-%d: %s", i+1, topic.String())
+	//	}
 
 	for i, follower := range user.GetFollowersN(5) {
 		logger.Info("	top follower-%d: %s", i+1, follower.String())
 	}
 
-	for i, follower := range user.GetFollowers() {
-		logger.Info("	follower-%d: %s", i+1, follower.String())
-	}
+	//	for i, follower := range user.GetFollowers() {
+	//		logger.Info("	follower-%d: %s", i+1, follower.String())
+	//	}
 
 	for i, followee := range user.GetFolloweesN(5) {
 		logger.Info("	top followee-%d: %s", i+1, followee.String())
 	}
 
-	for i, followee := range user.GetFollowees() {
-		logger.Info("	followee-%d: %s", i+1, followee.String())
-	}
+	//	for i, followee := range user.GetFollowees() {
+	//		logger.Info("	followee-%d: %s", i+1, followee.String())
+	//	}
 
 	for i, ask := range user.GetAsksN(5) {
 		logger.Info("	top ask-%d: %s", i+1, ask.String())
 	}
 
-	for i, ask := range user.GetAsks() {
-		logger.Info("	ask-%d: %s", i+1, ask.String())
-	}
+	//	for i, ask := range user.GetAsks() {
+	//		logger.Info("	ask-%d: %s", i+1, ask.String())
+	//	}
 
 	for i, answer := range user.GetAnswersN(5) {
 		logger.Info("	top answer-%d: %s", i+1, answer.String())
 	}
 
-	for i, answer := range user.GetAnswers() {
-		logger.Info("	answer-%d: %s", i+1, answer.String())
-	}
+	//	for i, answer := range user.GetAnswers() {
+	//		logger.Info("	answer-%d: %s", i+1, answer.String())
+	//	}
 
 	for i, collection := range user.GetCollectionsN(5) {
 		logger.Info("	top collection-%d: %s", i+1, collection.String())
 	}
 
-	for i, collection := range user.GetCollections() {
-		logger.Info("	collection-%d: %s", i+1, collection.String())
-	}
+	//	for i, collection := range user.GetCollections() {
+	//		logger.Info("	collection-%d: %s", i+1, collection.String())
+	//	}
 
 	for i, like := range user.GetLikes() {
 		logger.Info("	like-%d: %s", i+1, like.String())

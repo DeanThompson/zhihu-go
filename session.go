@@ -17,12 +17,13 @@ import (
 	"github.com/juju/persistent-cookiejar"
 )
 
+// Auth 是用于登录的信息，保存了用户名和密码
 type Auth struct {
 	Account  string `json:"account"`
 	Password string `json:"password"`
 
 	loginType string // phone_num 或 email
-	loginUrl  string // 通过 Account 判断
+	loginURL  string // 通过 Account 判断
 }
 
 // isEmail 判断是否通过邮箱登录
@@ -38,21 +39,22 @@ func (auth *Auth) isPhone() bool {
 func (auth *Auth) toForm() url.Values {
 	if auth.isEmail() {
 		auth.loginType = "email"
-		auth.loginUrl = makeZhihuLink("/login/email")
+		auth.loginURL = makeZhihuLink("/login/email")
 	} else if auth.isPhone() {
 		auth.loginType = "phone_num"
-		auth.loginUrl = makeZhihuLink("/login/phone_num")
+		auth.loginURL = makeZhihuLink("/login/phone_num")
 	} else {
 		panic("无法判断登录类型: " + auth.Account)
 	}
 	values := url.Values{}
-	logger.Info("登录类型：%s, 登录地址：%s", auth.loginType, auth.loginUrl)
+	logger.Info("登录类型：%s, 登录地址：%s", auth.loginType, auth.loginURL)
 	values.Set(auth.loginType, auth.Account)
 	values.Set("password", auth.Password)
 	values.Set("remember_me", "true") // import!
 	return values
 }
 
+// Session 保持和知乎服务器的会话，用于向服务器发起请求获取 HTML 或 JSON 数据
 type Session struct {
 	auth   *Auth
 	client *http.Client
@@ -108,7 +110,7 @@ func (s *Session) Login() error {
 
 	form := s.buildLoginForm().Encode()
 	body := strings.NewReader(form)
-	req, err := http.NewRequest("POST", s.auth.loginUrl, body)
+	req, err := http.NewRequest("POST", s.auth.loginURL, body)
 	if err != nil {
 		logger.Error("构造登录请求失败：%s", err.Error())
 		return err
@@ -117,7 +119,7 @@ func (s *Session) Login() error {
 	headers := newHTTPHeaders(true)
 	headers.Set("Content-Length", strconv.Itoa(len(form)))
 	headers.Set("Content-Type", "application/x-www-form-urlencoded")
-	headers.Set("Referer", baseZhihuUrl)
+	headers.Set("Referer", baseZhihuURL)
 	req.Header = headers
 
 	logger.Info("登录中，用户名：%s", s.auth.Account)
@@ -206,29 +208,29 @@ func (s *Session) Ajax(url string, body io.Reader, referer string) (*http.Respon
 
 // authenticated 检查是否已经登录（cookies 没有失效）
 func (s *Session) authenticated() bool {
-	originUrl := makeZhihuLink("/settings/profile")
-	resp, err := s.Get(originUrl)
+	originURL := makeZhihuLink("/settings/profile")
+	resp, err := s.Get(originURL)
 	if err != nil {
 		logger.Error("访问 profile 页面出错: %s", err.Error())
 		return false
 	}
 
 	// 如果没有登录，会跳转到 http://www.zhihu.com/?next=%2Fsettings%2Fprofile
-	lastUrl := resp.Request.URL.String()
-	logger.Info("获取 profile 的请求，跳转到了：%s", lastUrl)
-	return lastUrl == originUrl
+	lastURL := resp.Request.URL.String()
+	logger.Info("获取 profile 的请求，跳转到了：%s", lastURL)
+	return lastURL == originURL
 }
 
 func (s *Session) buildLoginForm() url.Values {
 	values := s.auth.toForm()
-	values.Set("_xsrf", s.searchXsrf())
+	values.Set("_xsrf", s.searchXSRF())
 	values.Set("captcha", s.downloadCaptcha())
 	return values
 }
 
 // 从 cookies 获取 _xsrf 用于 POST 请求
-func (s *Session) searchXsrf() string {
-	resp, err := s.Get(baseZhihuUrl)
+func (s *Session) searchXSRF() string {
+	resp, err := s.Get(baseZhihuURL)
 	if err != nil {
 		panic("获取 _xsrf 失败：" + err.Error())
 	}

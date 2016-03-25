@@ -8,7 +8,7 @@ const cfgFile = "./examples/config.json"
 
 func Test_searchXsrf(t *testing.T) {
 	s := NewSession()
-	logger.Debug("_xsrf: %s", s.searchXsrf())
+	logger.Debug("_xsrf: %s", s.searchXSRF())
 }
 
 //func Test_downloadCaptcha(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 
 // Collection 是一个知乎的收藏夹页面
 type Collection struct {
-	*ZhihuPage
+	*Page
 
 	// creator 是该收藏夹的创建者
 	creator *User
@@ -28,9 +28,9 @@ func NewCollection(link string, name string, creator *User) *Collection {
 	}
 
 	return &Collection{
-		ZhihuPage: newZhihuPage(link),
-		creator:   creator,
-		name:      name,
+		Page:    newZhihuPage(link),
+		creator: creator,
+		name:    name,
 	}
 }
 
@@ -88,7 +88,7 @@ func (c *Collection) GetFollowersNum() int {
 func (c *Collection) GetFollowersN(n int) []*User {
 	var (
 		link = urlJoin(c.Link, "/followers")
-		xsrf = c.GetXsrf()
+		xsrf = c.GetXSRF()
 	)
 	users, err := ajaxGetFollowers(link, xsrf, n)
 	if err != nil {
@@ -123,7 +123,7 @@ func (c *Collection) GetQuestionsN(n int) []*Question {
 	currentPage := 2
 	for currentPage <= totalPages {
 		link := fmt.Sprintf("%s?page=%d", c.Link, currentPage)
-		doc, err := newDocumentFromUrl(link)
+		doc, err := newDocumentFromURL(link)
 		if err != nil {
 			logger.Error("解析页面失败：%s, %s", link, err.Error())
 			return nil
@@ -166,7 +166,7 @@ func (c *Collection) GetAnswersN(n int) []*Answer {
 	currentPage := 2
 	for currentPage <= totalPages {
 		link := fmt.Sprintf("%s?page=%d", c.Link, currentPage)
-		doc, err := newDocumentFromUrl(link)
+		doc, err := newDocumentFromURL(link)
 		if err != nil {
 			logger.Error("解析页面失败：%s, %s", link, err.Error())
 			return nil
@@ -182,7 +182,7 @@ func (c *Collection) GetAnswersN(n int) []*Answer {
 	return answers
 }
 
-// GetAllAnswers 返回收藏夹里所有的回答
+// GetAnswers 返回收藏夹里所有的回答
 func (c *Collection) GetAnswers() []*Answer {
 	return c.GetAnswersN(-1)
 }
@@ -284,7 +284,7 @@ func getQuestionsFromDoc(doc *goquery.Document) []*Question {
 }
 
 func getAnswersFromDoc(doc *goquery.Document) []*Answer {
-	answers := make([]*Answer, 0)
+	var answers []*Answer
 	var lastQuestion *Question
 
 	doc.Find("div.zm-item").Each(func(index int, sel *goquery.Selection) {

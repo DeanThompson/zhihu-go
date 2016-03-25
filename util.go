@@ -18,7 +18,7 @@ import (
 
 const (
 	userAgent    = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/48.0.2564.116 Safari/537.36"
-	baseZhihuUrl = "https://www.zhihu.com"
+	baseZhihuURL = "https://www.zhihu.com"
 	pageSize     = 20
 )
 
@@ -132,7 +132,7 @@ func readCaptchaInput() string {
 }
 
 func makeZhihuLink(path string) string {
-	return urlJoin(baseZhihuUrl, path)
+	return urlJoin(baseZhihuURL, path)
 }
 
 func urlJoin(base, path string) string {
@@ -146,7 +146,7 @@ func urlJoin(base, path string) string {
 }
 
 // newDocumentFromUrl 会请求给定的 url，并返回一个 goquery.Document 对象用于解析
-func newDocumentFromUrl(url string) (*goquery.Document, error) {
+func newDocumentFromURL(url string) (*goquery.Document, error) {
 	resp, err := gSession.Get(url)
 	if err != nil {
 		logger.Error("请求 %s 失败：%s", url, err.Error())
@@ -162,7 +162,7 @@ func newDocumentFromUrl(url string) (*goquery.Document, error) {
 }
 
 // ZhihuPage 是一个知乎页面，User, Question, Answer, Collection 的公共部分
-type ZhihuPage struct {
+type Page struct {
 	// Link 是该页面的链接
 	Link string
 
@@ -174,15 +174,15 @@ type ZhihuPage struct {
 }
 
 // newZhihuPage 是 private 的构造器
-func newZhihuPage(link string) *ZhihuPage {
-	return &ZhihuPage{
+func newZhihuPage(link string) *Page {
+	return &Page{
 		Link:   link,
 		fields: make(map[string]interface{}),
 	}
 }
 
 // Doc 用于获取当前问题页面的 HTML document，惰性求值
-func (page *ZhihuPage) Doc() *goquery.Document {
+func (page *Page) Doc() *goquery.Document {
 	if page.doc != nil {
 		return page.doc
 	}
@@ -196,31 +196,31 @@ func (page *ZhihuPage) Doc() *goquery.Document {
 }
 
 // Refresh 会重新载入当前页面，获取最新的数据
-func (page *ZhihuPage) Refresh() (err error) {
+func (page *Page) Refresh() (err error) {
 	page.fields = make(map[string]interface{})    // 清空缓存
-	page.doc, err = newDocumentFromUrl(page.Link) // 重载页面
+	page.doc, err = newDocumentFromURL(page.Link) // 重载页面
 	return err
 }
 
 // GetXsrf 从当前页面内容抓取 xsrf 的值
-func (page *ZhihuPage) GetXsrf() string {
+func (page *Page) GetXSRF() string {
 	doc := page.Doc()
 	value, _ := doc.Find(`input[name="_xsrf"]`).Attr("value")
 	return value
 }
 
-func (page *ZhihuPage) setField(field string, value interface{}) {
+func (page *Page) setField(field string, value interface{}) {
 	page.fields[field] = value
 }
 
-func (page *ZhihuPage) getIntField(field string) (value int, exists bool) {
+func (page *Page) getIntField(field string) (value int, exists bool) {
 	if got, ok := page.fields[field]; ok {
 		return got.(int), true
 	}
 	return 0, false
 }
 
-func (page *ZhihuPage) getStringField(field string) (value string, exists bool) {
+func (page *Page) getStringField(field string) (value string, exists bool) {
 	if got, ok := page.fields[field]; ok {
 		return got.(string), true
 	}

@@ -11,7 +11,7 @@ import (
 
 // Answer 是一个知乎的答案
 type Answer struct {
-	*ZhihuPage
+	*Page
 
 	// question 是该答案对应的问题
 	question *Question
@@ -23,9 +23,9 @@ type Answer struct {
 // NewAnswer 用于创建一个 Answer 对象，其中 link 是必传的，question, author 可以为 nil
 func NewAnswer(link string, question *Question, author *User) *Answer {
 	return &Answer{
-		ZhihuPage: newZhihuPage(link),
-		question:  question,
-		author:    author,
+		Page:     newZhihuPage(link),
+		question: question,
+		author:   author,
 	}
 }
 
@@ -129,7 +129,7 @@ func (a *Answer) GetVotersN(n int) []*User {
 
 	querystring := fmt.Sprintf(`params={"answer_id":"%d"}`, a.GetID())
 	url := makeZhihuLink("/node/AnswerFullVoteInfoV2" + "?" + querystring)
-	doc, err := newDocumentFromUrl(url)
+	doc, err := newDocumentFromURL(url)
 	if err != nil {
 		return nil
 	}
@@ -161,19 +161,6 @@ func (a *Answer) GetVotersN(n int) []*User {
 // GetVoters 返回点赞的用户
 func (a *Answer) GetVoters() []*User {
 	return a.GetVotersN(-1)
-}
-
-// GetVisitTimes 返回所属问题被浏览次数
-func (a *Answer) GetVisitTimes() int {
-	if got, ok := a.getIntField("visit-times"); ok {
-		return got
-	}
-
-	doc := a.Doc()
-	text := strip(doc.Find("div.zm-side-section.zh-answer-status p strong").Text())
-	visitTimes, _ := strconv.Atoi(text)
-	a.setField("visit-times", visitTimes)
-	return visitTimes
 }
 
 func (a *Answer) GetCommentsNum() int {
