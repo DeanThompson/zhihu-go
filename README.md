@@ -7,7 +7,23 @@ zhihu-go：知乎非官方 API 库 with Go
 
 本项目基本上是把 [zhihu-python](https://github.com/egrcc/zhihu-python) 和 [zhihu-py3](https://github.com/7sDream/zhihu-py3) 从 Python 移植到了 Go. 相比之下，比 zhihu-python 的 API 更丰富，比 zhihu-py3 少了活动相关的 API.
 
-## 安装
+## Table of Contents
+
+* [Table of Contents](#table-of-contents)
+* [Install](#install)
+* [Documentation](#documentation)
+* [Usage](#usage)
+  * [Login：登录](#login)
+  * [User：获取用户信息](#user)
+  * [Question：获取问题信息](#question)
+  * [Answer：获取答案信息](#answer)
+  * [Collection：获取收藏夹信息](#collection)
+  * [Topic：获取话题信息](#topic)
+* [Known Issues](#known-issues)
+* [TODO](#todo)
+* [LICENSE](#license)
+
+## Install
 
 直接使用 `go get`:
 
@@ -21,11 +37,11 @@ go get github.com/DeanThompson/zhihu-go
 * [color](https://github.com/fatih/color)：用于输出带颜色的日志
 * [persistent-cookiejar](https://github.com/juju/persistent-cookiejar)：用于维护一个持久化的 cookiejar，实现保持登录
 
-## 文档
+## Documentation
 
 请点击链接前往 GoDoc 查看：[zhihu-go](https://godoc.org/github.com/DeanThompson/zhihu-go)
 
-## 使用
+## Usage
 
 目前已经实现了用户（User），问题（Question），回答（Answer），收藏夹（Collection），话题（Topic）相关的 API，都是信息获取类的，暂无操作类的。
 
@@ -35,7 +51,7 @@ zhihu-go 包名为 `zhihu`，使用前需要先 import:
 import "github.com/DeanThompson/zhihu-go"
 ```
 
-### 登录
+### Login
 
 调用 API 之前需要先登录。在 zhihu-go 内部，使用一个全局的 session 来访问所有页面，并自动处理 cookies.
 
@@ -49,7 +65,7 @@ zhihu.Init("/path/to/config.json")
 
 第一次登录会调用图像界面打开验证码文件，需要手动输入验证码到控制台。如果登录成功，后续的请求会沿用此次登录的 cookie, 不需要重复登录。
 
-### User：获取用户信息
+### User
 
 `zhihu.User` 表示一个知乎用户，可以用于获取一个用户的各种数据。
 
@@ -146,7 +162,7 @@ func showUser(user *zhihu.User) {
 }
 ```
 
-### Question：获取问题信息
+### Question
 
 `zhihu.Question` 表示一个知乎问题，用于获取问题相关的数据。初始化需要提供 url 和标题（可为空）:
 
@@ -224,7 +240,7 @@ func showQuestion(question *zhihu.Question) {
 }
 ```
 
-### Answer：获取回答信息
+### Answer
 
 `zhihu.Answer` 表示一个知乎答案，初始化时需要指定页面链接，也支持指定对应的问题（`*Question`，可以为 `nil`）和作者（`*User`，可以为 `nil`）：
 
@@ -269,7 +285,7 @@ func showAnswer(answer *zhihu.Answer) {
 }
 ```
 
-### Collection：获取收藏夹信息
+### Collection
 
 `zhihu.Collection` 表示一个收藏夹，初始化时必须指定页面 url，支持指定名称（`string` 可以为 `""`）和创建者（`creator *User`，可以为 `nil`）：
 
@@ -311,7 +327,7 @@ func showCollection(collection *zhihu.Collection) {
 }
 ```
 
-### Topic：获取话题信息
+### Topic
 
 `zhihu.Collection` 表示一个话题，初始化时必须指定页面 url，支持指定名称（`string` 可以为 `""`）：
 
@@ -350,7 +366,7 @@ func showTopic(topic *zhihu.Topic) {
 }
 ```
 
-## 已知问题
+## Known Issues
 
 无，欢迎 [提交 issues](https://github.com/DeanThompson/zhihu-go/issues)
 
