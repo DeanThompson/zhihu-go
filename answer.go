@@ -163,6 +163,7 @@ func (a *Answer) GetVoters() []*User {
 	return a.GetVotersN(-1)
 }
 
+// GetCommentsNum 返回评论数量
 func (a *Answer) GetCommentsNum() int {
 	if value, ok := a.getIntField("comment-num"); ok {
 		return value
@@ -173,6 +174,18 @@ func (a *Answer) GetCommentsNum() int {
 	rv := reMatchInt(text)
 	a.setField("comment-num", rv)
 	return rv
+}
+
+// GetCollectedNum 返回被收藏次数
+func (a *Answer) GetCollectedNum() int {
+	if value, ok := a.getIntField("collected-num"); ok {
+		return value
+	}
+
+	text := strip(a.Doc().Find(`a[data-za-l="sidebar_answer_collected_count"]`).Text())
+	value, _ := strconv.Atoi(text)
+	a.setField("collected-num", value)
+	return value
 }
 
 func (a *Answer) String() string {

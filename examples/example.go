@@ -103,6 +103,7 @@ func showAnswer(answer *zhihu.Answer) {
 	logger.Info("	author: %s", answer.GetAuthor().String())
 	logger.Info("	upvote num: %d", answer.GetUpvote())
 	logger.Info("	comments num: %d", answer.GetCommentsNum())
+	logger.Info("	collected num: %d", answer.GetCollectedNum())
 	logger.Info("	data ID: %d", answer.GetID())
 
 	// dump content

@@ -77,7 +77,7 @@ userID := "黄继新"
 user := zhihu.NewUser(link, userID)
 ```
 
-获取用户的数据（代码见：[example.go](examples/example.go#L155)）：
+获取用户的数据（代码见：[example.go](examples/example.go#L156)）：
 
 ```go
 func showUser(user *zhihu.User) {
@@ -270,6 +270,7 @@ func showAnswer(answer *zhihu.Answer) {
 	
 	logger.Info("	upvote num: %d", answer.GetUpvote())    // 赞同数：26486
 	logger.Info("	comments num: %d", answer.GetCommentsNum()) // 评论数：20
+	logger.Info("	collected num: %d", answer.GetCollectedNum())	// 被收藏次数：22929
 	logger.Info("	data ID: %d", answer.GetID())   // 数字 ID：12191779
 
 	// 点赞的用户
@@ -294,7 +295,7 @@ func showAnswer(answer *zhihu.Answer) {
 collection := zhihu.NewCollection("https://www.zhihu.com/collection/19677733", "", nil)
 ```
 
-获取收藏夹数据：（代码见：[example.go](examples/example.go#L123)）
+获取收藏夹数据：（代码见：[example.go](examples/example.go#L124)）
 
 ```go
 func showCollection(collection *zhihu.Collection) {
@@ -336,7 +337,7 @@ func showCollection(collection *zhihu.Collection) {
 topic := zhihu.NewTopic("https://www.zhihu.com/topic/19552832", "")
 ```
 
-获取收藏夹数据：（代码见：[example.go](examples/example.go#L230)）
+获取收藏夹数据：（代码见：[example.go](examples/example.go#L231)）
 
 ```go
 func showTopic(topic *zhihu.Topic) {
@@ -374,7 +375,7 @@ func showTopic(topic *zhihu.Topic) {
 
 按优先级降序排列：
 
-* [ ] 获取回答的收藏数
+* [X] 获取回答的收藏数
 * [ ] 获取收藏夹的答案数量
 * [ ] 获取用户的头像
 * [ ] 把答案导出到 markdown 文件
