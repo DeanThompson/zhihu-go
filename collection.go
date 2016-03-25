@@ -21,6 +21,7 @@ type Collection struct {
 	name string
 }
 
+// NewCollection 创建一个收藏夹对象，返回 *Collection
 func NewCollection(link string, name string, creator *User) *Collection {
 	if !validCollectionURL(link) {
 		panic("收藏夹链接不正确：" + link)

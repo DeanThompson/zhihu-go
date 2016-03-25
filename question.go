@@ -211,7 +211,6 @@ func (q *Question) getAnswersByAjax(page int) ([]*Answer, error) {
 		return nil, err
 	}
 
-	// TODO 判断 r 的值
 	answers := make([]*Answer, 0, len(result.Msg))
 	for _, answerHtml := range result.Msg {
 		doc, err := goquery.NewDocumentFromReader(strings.NewReader(answerHtml))
@@ -232,7 +231,6 @@ func (q *Question) getMoreAnswers(limit int) []*Answer {
 	totalPage := (limit + pageSize - 1) / pageSize
 	for index < totalPage {
 		page := index + 1
-		// TODO may be cacheable?
 		moreAnswers, err := q.getAnswersByAjax(page)
 		if err != nil {
 			logger.Error("加载第 %d 页回答失败，问题：%s，错误：%s", page, q.Link, err.Error())

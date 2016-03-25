@@ -2,6 +2,7 @@ package zhihu
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -81,6 +82,14 @@ func getCwd() string {
 		panic("获取 CWD 失败：" + err.Error())
 	}
 	return cwd
+}
+
+func save(filename string, content []byte) error {
+	return ioutil.WriteFile(filename, content, 0666)
+}
+
+func saveString(filename string, content string) error {
+	return ioutil.WriteFile(filename, []byte(content), 0666)
 }
 
 func openCaptchaFile(filename string) error {

@@ -80,26 +80,32 @@ func (a *Answer) GetUpvote() int {
 	return upvote
 }
 
-// TODO ToTxt 把回答导出到 txt 文件
-func (a *Answer) ToTxt() error {
-	return nil
+// ToMarkdown 把回答导出到 markdown 文件
+func (a *Answer) ToMarkdown(filename string) error {
+	if !strings.HasSuffix(filename, ".md") && !strings.HasSuffix(filename, ".markdown") {
+		filename += ".md"
+	}
+
+	// TODO convert to markdown
+	md := ""
+
+	return saveString(filename, md)
 }
 
-// TODO ToMarkdown 把回答导出到 markdown 文件
-func (a *Answer) ToMarkdown() error {
-	return nil
-}
+// ToHtml 把网页源码导出到 html 文件
+func (a *Answer) ToHtml(filename string) error {
+	if !strings.HasSuffix(filename, ".html") {
+		filename += ".html"
+	}
 
-// ToHtml 返回网页源码
-func (a *Answer) ToHtml() string {
 	html, err := a.Doc().Html()
 	if err != nil {
-		logger.Error("输出回答页面源码出错：%s", err.Error())
+		return err
 	}
-	return html
+	return saveString(filename, html)
 }
 
-// GetContent 返回回答的内容
+// GetContent 返回回答的内容，HTML 格式
 func (a *Answer) GetContent() string {
 	if got, ok := a.getStringField("content"); ok {
 		return got

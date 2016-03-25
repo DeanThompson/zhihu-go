@@ -22,8 +22,8 @@ type User struct {
 	userId string
 }
 
-// NewUser 创建一个用户对象
-// link 为空的时候表示匿名用户，此时 userId 仅允许 "匿名用户" 或 "知乎用户"
+// NewUser 创建一个用户对象。
+// link 为空的时候表示匿名用户，此时 userId 仅允许 "匿名用户" 或 "知乎用户"；
 // userId 可以为空，这种情况下调用 GetUserID 会去解析用户主页
 func NewUser(link string, userId string) *User {
 	if link == "" && !isAnonymous(userId) {

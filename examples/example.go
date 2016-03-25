@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
 
 	"github.com/DeanThompson/zhihu-go"
 )
@@ -240,17 +240,7 @@ func showTopic(topic *zhihu.Topic) {
 }
 
 func dumpAnswerHTML(filename string, answer *zhihu.Answer) error {
-	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		var _err error
-		if os.IsNotExist(err) {
-			fd, _err = os.Create(filename)
-			if _err != nil {
-				return _err
-			}
-		}
-	}
-	_, err = fd.WriteString(answer.GetContent())
+	err := ioutil.WriteFile(filename, []byte(answer.GetContent()), 0666)
 	if err == nil {
 		logger.Info("	content dumped to %s", filename)
 	}
