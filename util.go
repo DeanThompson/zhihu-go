@@ -23,11 +23,12 @@ const (
 )
 
 var (
-	reQuestionURL   = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
-	reCollectionURL = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
-	reTopicURL      = regexp.MustCompile("^(http|https)://www.zhihu.com/topic/[0-9]{8}$")
-	reGetNumber     = regexp.MustCompile(`([0-9])+`)
-	logger          = Logger{Enabled: true}
+	reQuestionURL    = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
+	reCollectionURL  = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
+	reTopicURL       = regexp.MustCompile("^(http|https)://www.zhihu.com/topic/[0-9]{8}$")
+	reGetNumber      = regexp.MustCompile(`([0-9])+`)
+	reAvatarReplacer = regexp.MustCompile(`_(s|xs|m|l|xl|hd).(png|jpg)`)
+	logger           = Logger{Enabled: true}
 )
 
 func validQuestionURL(value string) bool {
@@ -51,6 +52,19 @@ func reMatchInt(raw string) int {
 	return rv
 }
 
+func validateAvatarSize(size string) bool {
+	for _, x := range []string{"s", "xs", "m", "l", "xl", "hd"} {
+		if size == x {
+			return true
+		}
+	}
+	return false
+}
+
+func replaceAvatarSize(origin string, size string) string {
+	return reAvatarReplacer.ReplaceAllString(origin, fmt.Sprintf("_%s.$2", size))
+}
+
 func newHTTPHeaders(isXhr bool) http.Header {
 	headers := make(http.Header)
 	headers.Set("Accept", "*/*")
@@ -66,7 +80,7 @@ func newHTTPHeaders(isXhr bool) http.Header {
 }
 
 func strip(s string) string {
-	return strings.Trim(s, "\n")
+	return strings.TrimSpace(s)
 }
 
 func minInt(a, b int) int {

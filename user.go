@@ -145,6 +145,36 @@ func (user *User) GetGender() string {
 	return gender
 }
 
+// GetAvatar 返回用户的头像 URL，默认的尺寸
+func (user *User) GetAvatar() string {
+	if user.IsAnonymous() {
+		return ""
+	}
+
+	if got, ok := user.getStringField("avatar"); ok {
+		return got
+	}
+
+	img := user.Doc().Find("div.body").Find("img.Avatar").First()
+	avatar, _ := img.Attr("src")
+	user.setField("avatar", avatar)
+	return avatar
+}
+
+// GetAvatarWithSize 返回指定尺寸的的头像 URL，size 支持的值：s, xs, m, l, xl, hd, ""
+func (user *User) GetAvatarWithSize(size string) string {
+	defaultAvatar := user.GetAvatar()
+	if defaultAvatar == "" {
+		return defaultAvatar
+	}
+
+	if !validateAvatarSize(size) {
+		return defaultAvatar
+	}
+
+	return replaceAvatarSize(defaultAvatar, size)
+}
+
 // GetFollowersNum 返回用户的粉丝数量
 func (user *User) GetFollowersNum() int {
 	return user.getFollowersNumOrFolloweesNum("followers-num")

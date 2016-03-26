@@ -337,7 +337,7 @@ func showCollection(collection *zhihu.Collection) {
 topic := zhihu.NewTopic("https://www.zhihu.com/topic/19552832", "")
 ```
 
-获取收藏夹数据：（代码见：[example.go](examples/example.go#L231)）
+获取收藏夹数据：（代码见：[example.go](examples/example.go#L233)）
 
 ```go
 func showTopic(topic *zhihu.Topic) {
@@ -377,7 +377,7 @@ func showTopic(topic *zhihu.Topic) {
 
 * [X] 获取回答的收藏数
 * [ ] 获取收藏夹的答案数量
-* [ ] 获取用户的头像
+* [X] 获取用户的头像
 * [ ] 把答案导出到 markdown 文件
 * [ ] 更多的登录方式，不需要依赖图形界面打开验证码文件
 * [ ] 增加评论相关的 API

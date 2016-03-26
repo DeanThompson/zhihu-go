@@ -158,6 +158,8 @@ func showUser(user *zhihu.User) {
 	logger.Info("	is anonymous: %v", user.IsAnonymous())
 	logger.Info("	userId: %s", user.GetUserID())
 	logger.Info("	dataId: %s", user.GetDataID())
+	logger.Info("	avatar: %s", user.GetAvatar())
+	logger.Info("	avatar with size hd: %s", user.GetAvatarWithSize("hd"))
 	logger.Info("	bio: %s", user.GetBio())
 	logger.Info("	location: %s", user.GetLocation())
 	logger.Info("	business: %s", user.GetBusiness())
