@@ -165,6 +165,7 @@ func showUser(user *zhihu.User) {
 	logger.Info("	business: %s", user.GetBusiness())
 	logger.Info("	education: %s", user.GetEducation())
 	logger.Info("	gender: %s", user.GetGender())
+	logger.Info("	weibo: %s", user.GetWeiboURL())
 	logger.Info("	followers num: %d", user.GetFollowersNum())
 	logger.Info("	followees num: %d", user.GetFolloweesNum())
 	logger.Info("	followed columns num: %d", user.GetFollowedColumnsNum())

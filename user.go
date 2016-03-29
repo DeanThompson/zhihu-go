@@ -175,6 +175,25 @@ func (user *User) GetAvatarWithSize(size string) string {
 	return replaceAvatarSize(defaultAvatar, size)
 }
 
+// GetWeiboURL 返回用户的微博主页 URL
+func (user *User) GetWeiboURL() string {
+	if user.IsAnonymous() {
+		return ""
+	}
+
+	if got, ok := user.getStringField("weibo-url"); ok {
+		return got
+	}
+
+	value := ""
+	tag := user.Doc().Find("a.zm-profile-header-user-weibo")
+	if tag.Size() > 0 {
+		value, _ = tag.First().Attr("href")
+	}
+	user.setField("weibo-url", value)
+	return value
+}
+
 // GetFollowersNum 返回用户的粉丝数量
 func (user *User) GetFollowersNum() int {
 	return user.getFollowersNumOrFolloweesNum("followers-num")
