@@ -187,6 +187,16 @@ func (c *Collection) GetAnswers() []*Answer {
 	return c.GetAnswersN(-1)
 }
 
+// TODO GetQuestionsNum 返回收藏夹的问题数量
+func (c *Collection) GetQuestionsNum() int {
+	return 0
+}
+
+// TODO GetAnswersNum 返回收藏夹的答案数量
+func (c *Collection) GetAnswersNum() int {
+	return 0
+}
+
 func (c *Collection) String() string {
 	return fmt.Sprintf("<Collection: %s - %s>", c.GetName(), c.Link)
 }
