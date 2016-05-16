@@ -247,7 +247,7 @@ func (s *Session) searchXSRF() string {
 
 // downloadCaptcha 获取验证码，用于登录
 func (s *Session) downloadCaptcha() string {
-	url := makeZhihuLink(fmt.Sprintf("/captcha.gif?r=%d", 1000*time.Now().Unix()))
+	url := makeZhihuLink(fmt.Sprintf("/captcha.gif?r=%d&type=login", 1000*time.Now().Unix()))
 	logger.Info("获取验证码：%s", url)
 	resp, err := s.Get(url)
 	if err != nil {

@@ -7,6 +7,8 @@ zhihu-go：知乎非官方 API 库 with Go
 
 本项目基本上是把 [zhihu-python](https://github.com/egrcc/zhihu-python) 和 [zhihu-py3](https://github.com/7sDream/zhihu-py3) 从 Python 移植到了 Go. 相比之下，比 zhihu-python 的 API 更丰富，比 zhihu-py3 少了活动相关的 API.
 
+**注意：知乎的 API、前端等都可能随时会更新，所以本项目的接口可能会有过时的情况。如果遇到此类问题，欢迎提交 issue 或 pull requests.**
+
 ## Table of Contents
 
 * [Table of Contents](#table-of-contents)
