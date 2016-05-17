@@ -28,6 +28,7 @@ var (
 	reTopicURL       = regexp.MustCompile("^(http|https)://www.zhihu.com/topic/[0-9]{8}$")
 	reGetNumber      = regexp.MustCompile(`([0-9])+`)
 	reAvatarReplacer = regexp.MustCompile(`_(s|xs|m|l|xl|hd).(png|jpg)`)
+	reIsEmail        = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
 	logger           = Logger{Enabled: true}
 )
 
@@ -63,6 +64,10 @@ func validateAvatarSize(size string) bool {
 
 func replaceAvatarSize(origin string, size string) string {
 	return reAvatarReplacer.ReplaceAllString(origin, fmt.Sprintf("_%s.$2", size))
+}
+
+func isEmail(value string) bool {
+	return reIsEmail.MatchString(value)
 }
 
 func newHTTPHeaders(isXhr bool) http.Header {

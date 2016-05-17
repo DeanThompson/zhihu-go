@@ -28,7 +28,7 @@ type Auth struct {
 
 // isEmail 判断是否通过邮箱登录
 func (auth *Auth) isEmail() bool {
-	return regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`).MatchString(auth.Account)
+	return isEmail(auth.Account)
 }
 
 // isPhone 判断是否通过手机号登录
@@ -261,17 +261,9 @@ func (s *Session) downloadCaptcha() string {
 
 	fileExt := strings.Split(resp.Header.Get("Content-Type"), "/")[1]
 	verifyImg := filepath.Join(getCwd(), "verify."+fileExt)
-	fd, err := os.OpenFile(verifyImg, os.O_WRONLY, 0777)
+	fd, err := os.OpenFile(verifyImg, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
-		if os.IsNotExist(err) {
-			var _err error
-			fd, _err = os.Create(verifyImg)
-			if _err != nil {
-				panic("创建验证码文件失败：" + _err.Error())
-			}
-		} else {
-			panic("打开验证码文件失败：" + err.Error())
-		}
+		panic("打开验证码文件失败：" + err.Error())
 	}
 	defer fd.Close()
 
