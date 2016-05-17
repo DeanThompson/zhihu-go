@@ -187,9 +187,42 @@ func (c *Collection) GetAnswers() []*Answer {
 	return c.GetAnswersN(-1)
 }
 
-// TODO GetQuestionsNum 返回收藏夹的问题数量
+// GetQuestionsNum 返回收藏夹的问题数量
 func (c *Collection) GetQuestionsNum() int {
-	return 0
+	if value, ok := c.getIntField("question-num"); ok {
+		return value
+	}
+
+	doc := c.Doc()
+	// 根据分页情况来计算问题数量
+	// 收藏夹页面，每一页固定 10 个问题，每个问题下可能有多个答案；
+	pager := doc.Find("div.zm-invite-pager span")
+	rv := 0
+	if pager.Size() == 0 {
+		rv = doc.Find("#zh-list-answer-wrap h2.zm-item-title").Size()
+	} else {
+		//<div class="zm-invite-pager">
+		//	<span class="zg-gray-normal">上一页</span>
+		//	<span class="zg-gray-normal">1</span>
+		//	<span><a href="?page=2">2</a></span>
+		//	<span><a href="?page=3">3</a></span>
+		//	<span>...</span>
+		//	<span><a href="?page=17">17</a></span>
+		//	<span><a href="?page=2">下一页</a></span>
+		//</div>
+		lastPageSpan := pager.Eq(-2)
+		pageNum, _ := strconv.Atoi(lastPageSpan.Text())
+		lastPage, err := newDocumentFromURL(fmt.Sprintf("%s?page=%d", c.Link, pageNum))
+		if err != nil {
+			logger.Error("获取收藏夹最后一页失败：%s", err.Error())
+			return 0
+		}
+		numPerPage := 10
+		numOnLastPage := lastPage.Find("#zh-list-answer-wrap h2.zm-item-title").Size()
+		rv = (pageNum-1)*numPerPage + numOnLastPage
+	}
+	c.setField("question-num", rv)
+	return rv
 }
 
 // TODO GetAnswersNum 返回收藏夹的答案数量
