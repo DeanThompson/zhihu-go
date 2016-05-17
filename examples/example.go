@@ -127,6 +127,7 @@ func showCollection(collection *zhihu.Collection) {
 	logger.Info("	name: %s", collection.GetName())
 	logger.Info("	creator: %s", collection.GetCreator().String())
 	logger.Info("	followers num: %d", collection.GetFollowersNum())
+	logger.Info("	comments num: %d", collection.GetCommentsNum())
 
 	for i, follower := range collection.GetFollowersN(5) {
 		logger.Info("	top follower-%d: %s", i+1, follower.String())

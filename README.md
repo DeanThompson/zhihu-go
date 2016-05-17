@@ -79,7 +79,7 @@ userID := "黄继新"
 user := zhihu.NewUser(link, userID)
 ```
 
-获取用户的数据（代码见：[example.go](examples/example.go#L156)）：
+获取用户的数据（代码见：[example.go](examples/example.go#L157)）：
 
 ```go
 func showUser(user *zhihu.User) {
@@ -339,7 +339,7 @@ func showCollection(collection *zhihu.Collection) {
 topic := zhihu.NewTopic("https://www.zhihu.com/topic/19552832", "")
 ```
 
-获取收藏夹数据：（代码见：[example.go](examples/example.go#L234)）
+获取收藏夹数据：（代码见：[example.go](examples/example.go#L235)）
 
 ```go
 func showTopic(topic *zhihu.Topic) {

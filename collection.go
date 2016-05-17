@@ -197,6 +197,19 @@ func (c *Collection) GetAnswersNum() int {
 	return 0
 }
 
+// GetCommentsNum 返回评论数量
+func (c *Collection) GetCommentsNum() int {
+	if value, ok := c.getIntField("comment-num"); ok {
+		return value
+	}
+
+	doc := c.Doc()
+	text := strip(doc.Find("div#zh-list-meta-wrap  a.toggle-comment").Text())
+	rv := reMatchInt(text)
+	c.setField("comment-num", rv)
+	return rv
+}
+
 func (c *Collection) String() string {
 	return fmt.Sprintf("<Collection: %s - %s>", c.GetName(), c.Link)
 }
