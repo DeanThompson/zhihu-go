@@ -228,6 +228,11 @@ func (page *Page) GetXSRF() string {
 	return value
 }
 
+// totalPages 获取总页数
+func (page *Page) totalPages() int {
+	return getTotalPages(page.Doc())
+}
+
 func (page *Page) setField(field string, value interface{}) {
 	page.fields[field] = value
 }
@@ -244,6 +249,16 @@ func (page *Page) getStringField(field string) (value string, exists bool) {
 		return got.(string), true
 	}
 	return "", false
+}
+
+func getTotalPages(doc *goquery.Document) int {
+	pager := doc.Find("div.zm-invite-pager")
+	if pager.Size() == 0 {
+		return 1
+	}
+	text := pager.Find("span").Eq(-2).Text()
+	pages, _ := strconv.Atoi(text)
+	return pages
 }
 
 // nodeListResult 是形如 /node/XXListV2 这样的 Ajax 请求的 JSON 返回值

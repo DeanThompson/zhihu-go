@@ -79,7 +79,7 @@ userID := "黄继新"
 user := zhihu.NewUser(link, userID)
 ```
 
-获取用户的数据（代码见：[example.go](examples/example.go#L158)）：
+获取用户的数据（代码见：[example.go](examples/example.go#L159)）：
 
 ```go
 func showUser(user *zhihu.User) {
@@ -339,7 +339,7 @@ func showCollection(collection *zhihu.Collection) {
 topic := zhihu.NewTopic("https://www.zhihu.com/topic/19552832", "")
 ```
 
-获取收藏夹数据：（代码见：[example.go](examples/example.go#L236)）
+获取收藏夹数据：（代码见：[example.go](examples/example.go#L237)）
 
 ```go
 func showTopic(topic *zhihu.Topic) {
@@ -378,7 +378,7 @@ func showTopic(topic *zhihu.Topic) {
 按优先级降序排列：
 
 * [X] 获取回答的收藏数
-* [ ] 获取收藏夹的答案数量
+* [X] 获取收藏夹的答案数量
 * [X] 获取用户的头像
 * [X] 获取用户的微博地址
 * [ ] 把答案导出到 markdown 文件

@@ -193,41 +193,89 @@ func (c *Collection) GetQuestionsNum() int {
 		return value
 	}
 
-	doc := c.Doc()
 	// 根据分页情况来计算问题数量
 	// 收藏夹页面，每一页固定 10 个问题，每个问题下可能有多个答案；
-	pager := doc.Find("div.zm-invite-pager span")
-	rv := 0
-	if pager.Size() == 0 {
-		rv = doc.Find("#zh-list-answer-wrap h2.zm-item-title").Size()
-	} else {
-		//<div class="zm-invite-pager">
-		//	<span class="zg-gray-normal">上一页</span>
-		//	<span class="zg-gray-normal">1</span>
-		//	<span><a href="?page=2">2</a></span>
-		//	<span><a href="?page=3">3</a></span>
-		//	<span>...</span>
-		//	<span><a href="?page=17">17</a></span>
-		//	<span><a href="?page=2">下一页</a></span>
-		//</div>
-		lastPageSpan := pager.Eq(-2)
-		pageNum, _ := strconv.Atoi(lastPageSpan.Text())
-		lastPage, err := newDocumentFromURL(fmt.Sprintf("%s?page=%d", c.Link, pageNum))
+	totalPages := c.totalPages()
+	lastPage := c.Doc()
+
+	if totalPages > 1 {
+		lp, err := newDocumentFromURL(fmt.Sprintf("%s?page=%d", c.Link, totalPages))
 		if err != nil {
 			logger.Error("获取收藏夹最后一页失败：%s", err.Error())
 			return 0
 		}
-		numPerPage := 10
-		numOnLastPage := lastPage.Find("#zh-list-answer-wrap h2.zm-item-title").Size()
-		rv = (pageNum-1)*numPerPage + numOnLastPage
+		lastPage = lp
 	}
+
+	numOnLastPage := lastPage.Find("#zh-list-answer-wrap h2.zm-item-title").Size()
+	rv := (totalPages-1)*10 + numOnLastPage
 	c.setField("question-num", rv)
 	return rv
 }
 
-// TODO GetAnswersNum 返回收藏夹的答案数量
+// GetAnswersNum 返回收藏夹的答案数量
+// 获取答案数量有这几种方式：
+// 	1. 在收藏夹页面（/collections/1234567），遍历每一页，累计每页的回答数量。总请求数等于分页数。
+//	2. 在收藏夹创建者的个人主页，收藏夹栏目（people/xxyy/collections），有每个收藏夹的简介，
+//     其中就有回答数。遍历每一页（20个/页），找到对应的收藏夹，然后获取回答数。
+//     总请求数不确定，最好情况下 1 次；但考虑到每个用户的收藏夹并不会很多（如达到100个），可以认为最坏情况下需要 5 次。
+// 最终的方案可以综合以上两种方式，以收藏夹页面分页数做依据：
+//  如果页数大于 3（经验值），则采用方法 2；否则用方法 1
+// 希望能通过这样的方式来减少请求数，获得更好的性能。
 func (c *Collection) GetAnswersNum() int {
-	return 0
+	if value, ok := c.getIntField("answer-num"); ok {
+		return value
+	}
+
+	rv := 0
+	totalPages := c.totalPages()
+	if totalPages > 3 {
+		// 从个人主页上获取
+		page := 1
+		linkFmt := urlJoin(c.GetCreator().Link, "/collections?page=%d")
+		collectionHref := strings.Split(c.Link, "zhihu.com")[1]
+		selector := fmt.Sprintf(`a.zm-profile-fav-item-title[href="%s"]`, collectionHref)
+		for {
+			creatorCollectionLink := fmt.Sprintf(linkFmt, page)
+			doc, err := newDocumentFromURL(creatorCollectionLink)
+			if err != nil {
+				logger.Error("获取用户的收藏夹主页失败：%s", err.Error())
+				return 0
+			}
+			titleTag := doc.Find(selector).First()
+			if titleTag.Size() == 1 {
+				rv = reMatchInt(titleTag.Parent().Next().Contents().Eq(0).Text())
+				break
+			} else {
+				// 本页没找到，下一页
+				if doc.Find("div.border-pager").Size() == 0 {
+					return 0
+				} else {
+					pages := getTotalPages(doc)
+					if page == pages {
+						return 0
+					}
+					page++
+				}
+			}
+		}
+	} else {
+		selector := "#zh-list-answer-wrap div.zm-item-fav"
+		rv = c.Doc().Find(selector).Size()
+		currentPage := 2
+		for currentPage <= totalPages {
+			link := fmt.Sprintf("%s?page=%d", c.Link, currentPage)
+			doc, err := newDocumentFromURL(link)
+			if err != nil {
+				logger.Error("解析页面失败：%s, %s", link, err.Error())
+				return 0
+			}
+			rv += doc.Find(selector).Size()
+			currentPage++
+		}
+	}
+	c.setField("answer-num", rv)
+	return rv
 }
 
 // GetCommentsNum 返回评论数量
@@ -245,17 +293,6 @@ func (c *Collection) GetCommentsNum() int {
 
 func (c *Collection) String() string {
 	return fmt.Sprintf("<Collection: %s - %s>", c.GetName(), c.Link)
-}
-
-func (c *Collection) totalPages() int {
-	pager := c.Doc().Find("div.zm-invite-pager")
-	if pager.Size() == 0 {
-		// 只有一页
-		return 1
-	}
-	text := pager.Find("span").Eq(-2).Text()
-	pages, _ := strconv.Atoi(text)
-	return pages
 }
 
 func ajaxGetFollowers(link string, xsrf string, total int) ([]*User, error) {
