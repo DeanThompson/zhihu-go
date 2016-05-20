@@ -149,6 +149,19 @@ func (q *Question) GetTopAnswer() *Answer {
 	return nil
 }
 
+// GetCommentsNum 返回问题的评论数量
+func (q *Question) GetCommentsNum() int {
+	if value, ok := q.getIntField("comment-num"); ok {
+		return value
+	}
+
+	doc := q.Doc()
+	text := doc.Find("div.zm-meta-panel a.toggle-comment").Text()
+	rv := reMatchInt(strip(text))
+	q.setField("comment-num", rv)
+	return rv
+}
+
 // GetVisitTimes 获取问题的访问次数
 func (q *Question) GetVisitTimes() int {
 	if got, ok := q.getIntField("visit-times"); ok {

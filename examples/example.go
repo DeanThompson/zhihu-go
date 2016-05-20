@@ -55,6 +55,7 @@ func showQuestion(question *zhihu.Question) {
 	logger.Info("	detail: %s", question.GetDetail())
 	logger.Info("	answers num: %d", question.GetAnswersNum())
 	logger.Info("	followers num: %d", question.GetFollowersNum())
+	logger.Info("	comments num: %d", question.GetCommentsNum())
 
 	for i, topic := range question.GetTopics() {
 		logger.Info("	topic-%d: %s", i+1, topic.String())
