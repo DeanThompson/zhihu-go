@@ -24,7 +24,7 @@ const (
 
 var (
 	reQuestionURL    = regexp.MustCompile("^(http|https)://www.zhihu.com/question/[0-9]{8}$")
-	reCollectionURL  = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8}$")
+	reCollectionURL  = regexp.MustCompile("^(http|https)://www.zhihu.com/collection/[0-9]{8,9}$") // bugfix: for private collection
 	reTopicURL       = regexp.MustCompile("^(http|https)://www.zhihu.com/topic/[0-9]{8}$")
 	reGetNumber      = regexp.MustCompile(`([0-9])+`)
 	reAvatarReplacer = regexp.MustCompile(`_(s|xs|m|l|xl|hd).(png|jpg)`)
